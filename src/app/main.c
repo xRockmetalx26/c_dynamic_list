@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <linked_list/dll.h>
+
+#include <linked_list/linked_list.h>
 
 #define STUDENT_SIZE sizeof (struct _Student)
 #define DATA_SIZE sizeof (struct _Data)
@@ -39,7 +40,7 @@ void delete_student(void *student) {
     }
 }
 
-void delete_data(void *data) {
+void delete_data2(void *data) {
     Data to_delete = (Data) data;
 
     if(to_delete) {
@@ -60,16 +61,16 @@ int main() {
     LinkedList list = new_list();
     Data data = new_data("Ronald", 1);
 
-    add_first_node(list, data);
+    add_first(list, data);
 
     printf("list: %llu, node: %llu, student: %llu, data: %llu", LINKED_LIST_SIZE, NODE_SIZE, STUDENT_SIZE, DATA_SIZE);
-    //add_last_node(list, new_data("Jose", 2));
-    //insert_a_node(list, new_data("jesus", 3), 1);
-    //add_last_node(list, new_data("Alan", 4));
+    add_last(list, new_data("Jose", 2));
+    insert_at(list, new_data("jesus", 3), 1);
+    add_last(list, new_data("Alan", 4));
 
     print_students(list);
 
-    delete_dll(list, delete_data);
+    hard_delete_list(list, delete_data2);
 
     return EXIT_SUCCESS;
 }
