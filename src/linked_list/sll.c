@@ -13,53 +13,60 @@ void delete_sll(StaticLinkedList list) {
     }
 }
 
-void delete_first_sll(StaticLinkedList list) {
+void* delete_first_sll(StaticLinkedList list) {
     if(is_empty_list(list)) {
-        return;
+        return NULL;
     }
 
     Node to_delete = list->first;
+    void *data = to_delete->data;
     list->first = list->first->next;
     list->size--;
 
     free(to_delete);
+
+    return data;
 }
 
-void delete_last_sll(StaticLinkedList list) {
+void* delete_last_sll(StaticLinkedList list) {
     if(is_empty_list(list)) {
-        return;
+        return NULL;
     }
 
     if(list->size == 1) {
-        delete_first_sll(list);
-        return;
+        return delete_first_sll(list);
     }
 
     Node previous = get_node(list, list->size - 2);
     Node to_delete = previous->next;
+    void *data = to_delete->data;
     previous->next = NULL;
     list->last = previous;
     list->size--;
 
     free(to_delete);
+
+    return data;
 }
 
-void delete_at_sll(StaticLinkedList list, const size_t index) {
+void* delete_at_sll(StaticLinkedList list, const size_t index) {
     if(!is_valid_index(list, index)) {
-        return;
+        return NULL;
     }
 
     if(!index) {
-        delete_first_sll(list);
-        return;
+        return delete_first_sll(list);
     }
 
     Node previous = get_node(list, index - 1);
     Node to_delete = previous->next;
+    void *data = to_delete->data;
     previous->next = to_delete->next;
     list->size--;
 
     free(to_delete);
+
+    return data;
 }
 
 void delete_all_sll(StaticLinkedList list) {

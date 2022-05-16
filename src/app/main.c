@@ -3,40 +3,73 @@
 #include <string.h>
 #include <linked_list/dll.h>
 
-typedef struct Student {
+#define STUDENT_SIZE sizeof (struct _Student)
+#define DATA_SIZE sizeof (struct _Data)
+
+typedef struct _Student {
     char name[128];
     size_t id;
-} Student;
-
-Student* new_student(const char *name, const size_t id) {
-    Student *student = (Student*) calloc(1, sizeof(Student));
+} *Student;
+//136
+typedef struct _Data {
+    Student student;
+} *Data;
+// 8
+Student new_student(const char *name, const size_t id) {
+    Student student = (Student) malloc(STUDENT_SIZE);
+    student->id = id;
 
     strcpy(student->name, name);
-
-    student->id = id;
 
     return student;
 }
 
+Data new_data(const char *name, const size_t id) {
+    Data data = (Data) malloc(DATA_SIZE);
+    data->student = new_student(name, id);
+
+    return data;
+}
+
+void delete_student(void *student) {
+    Student to_delete = (Student) student;
+
+    if(to_delete) {
+        free(to_delete);
+    }
+}
+
+void delete_data(void *data) {
+    Data to_delete = (Data) data;
+
+    if(to_delete) {
+        delete_student(to_delete->student);
+        free(to_delete);
+    }
+}
+
 void print_students(LinkedList list) {
     for(Node it = list->first; it; it = it->next) {
-        Student *student = (Student*) it->data;
+        Data data = (Data) it->data;
 
-        printf("Name: %s, Age: %llu\n", student->name, student->id);
+        printf("Name: %s, Age: %llu\n", data->student->name, data->student->id);
     }
 }
 
 int main() {
     LinkedList list = new_list();
+    Data data = new_data("Ronald", 1);
 
-    add_first_node(list, new_student("Ronald", 1));
-    add_last_node(list, new_student("Jose", 2));
-    insert_a_node(list, new_student("jesus", 3), 1);
-    add_last_node(list, new_student("Alan", 4));
+    add_first_node(list, data);
+
+    printf("list: %llu, node: %llu, student: %llu, data: %llu", LINKED_LIST_SIZE, NODE_SIZE, STUDENT_SIZE, DATA_SIZE);
+    //add_last_node(list, new_data("Jose", 2));
+    //insert_a_node(list, new_data("jesus", 3), 1);
+    //add_last_node(list, new_data("Alan", 4));
 
     print_students(list);
 
-    delete_dll(list);
+    delete_dll(list, delete_data);
 
     return EXIT_SUCCESS;
 }

@@ -131,7 +131,7 @@ bool is_full_list(LinkedList list) {
 // index, add, insert validations implements
 
 bool is_valid_index(LinkedList list, const size_t index) {
-    if(!is_empty_list(list)) {
+    if(is_empty_list(list)) {
         return false;
     }
 
