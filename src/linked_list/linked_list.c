@@ -40,7 +40,12 @@ Node get_node(LinkedList list, const size_t index) {
 }
 
 void* get_data(LinkedList list, const size_t index) {
-    return get_node(list, index)->data;
+    Node node = get_node(list, index);
+    if(!node) {
+        return NULL;
+    }
+
+    return node->data;
 }
 
 // add implements
