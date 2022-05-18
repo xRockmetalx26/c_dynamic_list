@@ -59,31 +59,31 @@ void print_students(LinkedList list) {
 }
 
 int main() {
-    LinkedList list = new_list();
+    LinkedList list = LL_new_list();
 
-    add_last(list, new_data("Ronald", 1));
-    add_last(list, new_data("Jose", 2));
-    add_last(list, new_data("jesus", 3));
-    add_last(list, new_data("Alan", 4));
-    add_last(list, new_data("cinco", 5));
+    LL_add_last(list, new_data("Ronald", 1));
+    LL_add_last(list, new_data("Jose", 2));
+    LL_add_last(list, new_data("jesus", 3));
+    LL_add_last(list, new_data("Alan", 4));
+    LL_add_last(list, new_data("cinco", 5));
 
     puts("normal list:");
     print_students(list);
 
     puts("\nreverse list:");
-    reverse_list(list);
+    LL_reverse(list);
     print_students(list);
 
     puts("\nrandomize list:");
-    randomize_list(list);
+    LL_randomize(list);
     print_students(list);
 
     puts("\ncopy list:");
-    LinkedList list_copy = copy_list(list, DATA_SIZE);
+    LinkedList list_copy = LL_copy(list, DATA_SIZE);
     print_students(list_copy);
 
-    hard_delete_list(list, delete_data2);
-    hard_delete_list(list_copy, delete_data2);
+    LL_hard_delete_list(list, delete_data2);
+    LL_hard_delete_list(list_copy, delete_data2);
 
     return EXIT_SUCCESS;
 }
