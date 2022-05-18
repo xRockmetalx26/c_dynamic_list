@@ -17,6 +17,7 @@ typedef struct _LinkedList {
 LinkedList new_list();                                                       // create a linked list
 
 void* get_data(LinkedList list, size_t index);                               // get the data of a node, given an index
+void swap_data(LinkedList list, size_t index_1, size_t index_2);             // swap two values from the list
 
 Node add_first(LinkedList list, void *data);                                 // add a node with data to the beginning of the list
 Node add_last(LinkedList list, void *data);                                  // add a node with data to the end of the list
@@ -42,6 +43,8 @@ bool is_valid_index(LinkedList list, size_t index);                          // 
 bool is_valid_add(LinkedList list);                                          // checks if valid insert in list
 bool is_valid_insert(LinkedList list, size_t index);                         // checks if valid insert in list
 
+LinkedList copy_list(LinkedList list, size_t size_data);                     // copy a list
 LinkedList reverse_list(LinkedList list);                                    // reverse a list
+LinkedList randomize_list(LinkedList list);                                  // randomize a list
 
 #endif // LINKED_LIST_H

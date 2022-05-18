@@ -3,11 +3,17 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
 
 // linked list implements
 
 LinkedList new_list() {
     LinkedList list = (LinkedList) calloc(1, LINKED_LIST_SIZE);
+    if(!list) {
+        fprintf(stderr, "\nERROR in new_list(), calloc() is null.\n");
+        return NULL;
+    }
 
     return list;
 }
@@ -18,6 +24,7 @@ Node new_node(void *data) {
     Node node = (Node) calloc(1, NODE_SIZE);
 
     if(!node) {
+        fprintf(stderr, "\nERROR in new_node(), calloc() is null.\n");
         return NULL;
     }
 
@@ -40,6 +47,16 @@ Node get_node(LinkedList list, const size_t index) {
     return iterator;
 }
 
+void swap_data(LinkedList list, size_t index_1, size_t index_2) {
+    if(is_valid_index(list, index_1) && is_valid_index(list, index_2)) {
+        Node node_1 = get_node(list, index_1);
+        void *data_copy = node_1->data;
+        Node node_2 = get_node(list, index_2);
+        node_1->data = node_2->data;
+        node_2->data = data_copy;
+    }
+}
+
 void* get_data(LinkedList list, const size_t index) {
     Node node = get_node(list, index);
     if(!node) {
@@ -48,6 +65,7 @@ void* get_data(LinkedList list, const size_t index) {
 
     return node->data;
 }
+
 // add implements
 
 Node add_first(LinkedList list, void *data) {
@@ -255,7 +273,7 @@ void hard_delete_all(LinkedList list, void (*deleter)(void*)) {
 
 bool is_valid_list(LinkedList list) {
     if(!list) {
-        fprintf(stderr, "ERROR, linked list is null.\n");
+        fprintf(stderr, "\nERROR, linked list is null.\n");
         return false;
     }
 
@@ -285,7 +303,12 @@ bool is_valid_index(LinkedList list, const size_t index) {
         return false;
     }
 
-    return index < list->size ? true : false;
+    if(index >= list->size) {
+        fprintf(stderr, "\nERROR in is_valid_index(), index >= linked list size.\n");
+        return false;
+    }
+
+    return true;
 }
 
 bool is_valid_add(LinkedList list) {
@@ -298,29 +321,55 @@ bool is_valid_insert(LinkedList list, const size_t index) {
 
 // reverse implements
 
-void reverse_iterator_list(Node previous, Node first) {
-    if(!first) {
-        return;
-    }
-
-    Node next = first->next;
-    first->next = previous;
-
-    if(next) {
-        reverse_iterator_list(first, next);
-    }
-}
-
-LinkedList reverse_list(LinkedList list) {
+LinkedList copy_list(LinkedList list, const size_t size_data) {
     if(is_empty_list(list)) {
         return list;
     }
 
-    Node last = list->last;
+    LinkedList list_copy = new_list();
+    if(!list_copy) {
+        fprintf(stderr, "\nERROR in copy_list(), new_list() is null.\n");
+        return NULL;
+    }
 
-    reverse_iterator_list(NULL, list->first);
+    for(Node it = list->first; it; it = it->next) {
+        void *data = malloc(size_data);
+        if(!data) {
+            fprintf(stderr, "\nERROR in copy_list(), malloc() is null.\n");
+            return NULL;
+        }
 
-    list->first = last;
+        memcpy(data, it->data, size_data);
+        add_last(list_copy, data);
+    }
+
+    return list_copy;
+}
+
+LinkedList reverse_list(LinkedList list) {
+    if(is_empty_list(list) || list->size == 1) {
+        return list;
+    }
+
+    const size_t mid_data = list->size / 2;
+
+    for(size_t i = 0; i < mid_data; i++) {
+        swap_data(list, i, list->size - 1 - i);
+    }
+
+    return list;
+}
+
+LinkedList randomize_list(LinkedList list) {
+    if(is_empty_list(list) || list->size == 1) {
+        return list;
+    }
+
+    srand(time(NULL));
+
+    for(size_t j = 0; j < list->size; j++) {
+        swap_data(list, j, rand() % list->size);
+    }
 
     return list;
 }

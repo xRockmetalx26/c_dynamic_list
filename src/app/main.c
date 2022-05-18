@@ -16,6 +16,7 @@ typedef struct _Data {
     Student student;
 } *Data;
 // 8
+
 Student new_student(const char *name, const size_t id) {
     Student student = (Student) malloc(STUDENT_SIZE);
     student->id = id;
@@ -59,18 +60,30 @@ void print_students(LinkedList list) {
 
 int main() {
     LinkedList list = new_list();
-    Data data = new_data("Ronald", 1);
 
-    add_first(list, data);
-
-    printf("list: %llu, node: %llu, student: %llu, data: %llu", LINKED_LIST_SIZE, NODE_SIZE, STUDENT_SIZE, DATA_SIZE);
+    add_last(list, new_data("Ronald", 1));
     add_last(list, new_data("Jose", 2));
-    insert_at(list, new_data("jesus", 3), 1);
+    add_last(list, new_data("jesus", 3));
     add_last(list, new_data("Alan", 4));
+    add_last(list, new_data("cinco", 5));
 
+    puts("normal list:");
     print_students(list);
 
+    puts("\nreverse list:");
+    reverse_list(list);
+    print_students(list);
+
+    puts("\nrandomize list:");
+    randomize_list(list);
+    print_students(list);
+
+    puts("\ncopy list:");
+    LinkedList list_copy = copy_list(list, DATA_SIZE);
+    print_students(list_copy);
+
     hard_delete_list(list, delete_data2);
+    hard_delete_list(list_copy, delete_data2);
 
     return EXIT_SUCCESS;
 }
