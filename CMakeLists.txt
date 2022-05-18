@@ -27,10 +27,14 @@ file(GLOB_RECURSE RES_FILES "res/*.rc")
 
 # LIBRARY FILES
 file(GLOB_RECURSE LIB_FILES "lib/*.a")
-file(GLOB_RECURSE LIB_FILES "lib/*.*.a")
+
+# LINKED LIST LIB
+file(GLOB_RECURSE LINKED_LIST_FILES "src/linked_list/*.c")
+add_library(linked_list STATIC ${LINKED_LIST_FILES})
 
 # EXECUTABLE NAME
 set(APP "test")
+
 
 # FILES OUTPUT PATHS
 set(EXECUTABLE_OUTPUT_PATH "..")
