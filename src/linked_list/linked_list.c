@@ -47,6 +47,15 @@ Node get_node(LinkedList list, const size_t index) {
     return iterator;
 }
 
+void* LL_get_data(LinkedList list, const size_t index) {
+    Node node = get_node(list, index);
+    if(!node) {
+        return NULL;
+    }
+
+    return node->data;
+}
+
 void LL_swap_data(LinkedList list, size_t index_1, size_t index_2) {
     if(LL_is_valid_index(list, index_1) && LL_is_valid_index(list, index_2)) {
         Node node_1 = get_node(list, index_1);
@@ -55,15 +64,6 @@ void LL_swap_data(LinkedList list, size_t index_1, size_t index_2) {
         node_1->data = node_2->data;
         node_2->data = data_copy;
     }
-}
-
-void* LL_get_data(LinkedList list, const size_t index) {
-    Node node = get_node(list, index);
-    if(!node) {
-        return NULL;
-    }
-
-    return node->data;
 }
 
 // add implements
@@ -319,7 +319,7 @@ bool LL_is_valid_insert(LinkedList list, const size_t index) {
     return (LL_is_valid_add(list) && LL_is_valid_index(list, index)) ? true : false;
 }
 
-// reverse implements
+// utilities
 
 LinkedList LL_copy(LinkedList list, const size_t size_data) {
     if(LL_is_empty_list(list)) {
