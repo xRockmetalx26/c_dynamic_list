@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <limits.h>
+#include <stdio.h>
 
 // linked list implements
 
@@ -47,7 +48,6 @@ void* get_data(LinkedList list, const size_t index) {
 
     return node->data;
 }
-
 // add implements
 
 Node add_first(LinkedList list, void *data) {
@@ -254,7 +254,12 @@ void hard_delete_all(LinkedList list, void (*deleter)(void*)) {
 // validations list implements
 
 bool is_valid_list(LinkedList list) {
-    return list ? true : false;
+    if(!list) {
+        fprintf(stderr, "ERROR, linked list is null.\n");
+        return false;
+    }
+
+    return true;
 }
 
 bool is_empty_list(LinkedList list) {
@@ -307,11 +312,7 @@ void reverse_iterator_list(Node previous, Node first) {
 }
 
 LinkedList reverse_list(LinkedList list) {
-    if(!list) {
-        return NULL;
-    }
-
-    if(!list->size) {
+    if(is_empty_list(list)) {
         return list;
     }
 
