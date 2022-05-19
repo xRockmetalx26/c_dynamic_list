@@ -39,6 +39,7 @@ bool LL_is_valid_list(LinkedList list);                                         
 bool LL_is_empty_list(LinkedList list);                                         // checks if the list is empty
 bool LL_is_full_list(LinkedList list);                                          // checks if the list is full (size_t max) is max
 
+bool LL_contains(LinkedList list, void *data);                                  // checks if the list contains the data
 bool LL_is_valid_index(LinkedList list, size_t index);                          // checks if the list contains a node at the index
 bool LL_is_valid_add(LinkedList list);                                          // checks if valid insert in list
 bool LL_is_valid_insert(LinkedList list, size_t index);                         // checks if valid insert in list

@@ -22,7 +22,6 @@ LinkedList LL_new_list() {
 
 Node new_node(void *data) {
     Node node = (Node) calloc(1, NODE_SIZE);
-
     if(!node) {
         fprintf(stderr, "\nERROR in new_node(), calloc() is null.\n");
         return NULL;
@@ -39,7 +38,6 @@ Node get_node(LinkedList list, const size_t index) {
     }
 
     Node iterator = list->first;
-
     for(size_t i = 0; i < index; i++) {
         iterator = iterator->next;
     }
@@ -74,7 +72,6 @@ Node LL_add_first(LinkedList list, void *data) {
     }
 
     Node node = new_node(data);
-
     if(!node) {
         return NULL;
     }
@@ -98,7 +95,6 @@ Node LL_add_last(LinkedList list, void *data) {
     }
 
     Node node = new_node(data);
-
     if(!node) {
         return NULL;
     }
@@ -176,7 +172,7 @@ void* LL_soft_delete_last(LinkedList list) {
     }
 
     if(list->size == 1) {
-        return LL_soft_delete_last(list);
+        return LL_soft_delete_first(list);
     }
 
     Node previous = get_node(list, list->size - 2);
@@ -216,11 +212,11 @@ void LL_soft_delete_all(LinkedList list) {
         return;
     }
 
-    Node iterator = list->first;
-
-    while(iterator) {
-        Node to_delete = iterator;
-        iterator = iterator->next;
+    Node it = list->first;
+    Node to_delete;
+    while(it) {
+        to_delete = it;
+        it = it->next;
 
         free(to_delete);
     }
@@ -255,11 +251,11 @@ void LL_hard_delete_all(LinkedList list, void (*deleter)(void*)) {
         return;
     }
 
-    Node iterator = list->first;
-
-    while(iterator) {
-        Node to_delete = iterator;
-        iterator = iterator->next;
+    Node it = list->first;
+    Node to_delete;
+    while(it) {
+        to_delete = it;
+        it = it->next;
 
         delete_data(to_delete->data, deleter);
         free(to_delete);
@@ -298,6 +294,20 @@ bool LL_is_full_list(LinkedList list) {
 
 // index, add, insert validations implements
 
+bool LL_contains(LinkedList list, void *data) {
+    if(LL_is_empty_list(list)) {
+        return false;
+    }
+
+    for(Node it = list->first; it; it = it->next) {
+        if(it->data == data) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool LL_is_valid_index(LinkedList list, const size_t index) {
     if(LL_is_empty_list(list)) {
         return false;
@@ -332,8 +342,9 @@ LinkedList LL_copy(LinkedList list, const size_t size_data) {
         return NULL;
     }
 
+    void *data;
     for(Node it = list->first; it; it = it->next) {
-        void *data = malloc(size_data);
+        data = malloc(size_data);
         if(!data) {
             fprintf(stderr, "\nERROR in LL_copy(), malloc() is null.\n");
             return NULL;
