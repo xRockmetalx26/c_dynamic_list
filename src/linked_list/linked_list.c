@@ -37,12 +37,12 @@ Node get_node(LinkedList list, const size_t index) {
         return NULL;
     }
 
-    Node iterator = list->first;
+    Node it = list->first;
     for(size_t i = 0; i < index; i++) {
-        iterator = iterator->next;
+        it = it->next;
     }
 
-    return iterator;
+    return it;
 }
 
 void* LL_get_data(LinkedList list, const size_t index) {
@@ -269,7 +269,7 @@ void LL_hard_delete_all(LinkedList list, void (*deleter)(void*)) {
 
 bool LL_is_valid_list(LinkedList list) {
     if(!list) {
-        fprintf(stderr, "\nERROR, linked list is null.\n");
+        fprintf(stderr, "\nERROR in LL_is_valid_list(), linked list is null.\n");
         return false;
     }
 
@@ -378,8 +378,8 @@ LinkedList LL_randomize(LinkedList list) {
 
     srand(time(NULL));
 
-    for(size_t j = 0; j < list->size; j++) {
-        LL_swap_data(list, j, rand() % list->size);
+    for(size_t i = 0; i < list->size; i++) {
+        LL_swap_data(list, i, rand() % list->size);
     }
 
     return list;
