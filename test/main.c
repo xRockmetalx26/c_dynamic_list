@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <linked_list/linked_list.h>
+#include <linked_list.h>
 
 #define STUDENT_SIZE sizeof (struct _Student)
 #define DATA_SIZE sizeof (struct _Data)

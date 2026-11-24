@@ -3,10 +3,7 @@
 
 #define LINKED_LIST_SIZE sizeof (struct _LinkedList)
 
-#include <stddef.h>
-#include <stdbool.h>
-
-#include <linked_list/node.h>
+#include <node.h>
 
 typedef struct _LinkedList {
     Node first;
