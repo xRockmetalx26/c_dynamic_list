@@ -1,6 +1,5 @@
 #include <linked_list.h>
-
-#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,13 +53,31 @@ void *LL_get_data(LinkedList list, const size_t index) {
 }
 
 void LL_swap_data(LinkedList list, size_t index_1, size_t index_2) {
-  if (LL_is_valid_index(list, index_1) && LL_is_valid_index(list, index_2)) {
-    Node node_1 = get_node(list, index_1);
-    void *data_copy = node_1->data;
-    Node node_2 = get_node(list, index_2);
-    node_1->data = node_2->data;
-    node_2->data = data_copy;
+  if (!LL_is_valid_index(list, index_1) || !LL_is_valid_index(list, index_2)) {
+    return;
   }
+
+  if (index_1 == index_2) {
+    return;
+  }
+
+  Node node_1 = NULL;
+  Node node_2 = NULL;
+  size_t i = 0;
+  for (Node it = list->first; it && (!node_1 || !node_2); it = it->next) {
+    if (i == index_1) {
+      node_1 = it;
+    }
+    if (i == index_2) {
+      node_2 = it;
+    }
+
+    i++;
+  }
+
+  void *data_copy = node_1->data;
+  node_1->data = node_2->data;
+  node_2->data = data_copy;
 }
 
 // ADD IMPLEMENTS
@@ -303,7 +320,7 @@ bool LL_is_full_list(LinkedList list) {
     return false;
   }
 
-  return list->size == ULONG_LONG_MAX ? true : false;
+  return list->size == SIZE_MAX ? true : false;
 }
 
 // INDEX, ADD, INSERT VALIDATIONS IMPLEMENTS
@@ -404,11 +421,18 @@ LinkedList LL_reverse(LinkedList list) {
     return list;
   }
 
-  const size_t mid_data = list->size / 2;
+  Node previous = NULL;
+  Node current = list->first;
+  list->last = list->first;
 
-  for (size_t i = 0; i < mid_data; i++) {
-    LL_swap_data(list, i, list->size - 1 - i);
+  while (current) {
+    Node next = current->next;
+    current->next = previous;
+    previous = current;
+    current = next;
   }
+
+  list->first = previous;
 
   return list;
 }
