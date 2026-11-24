@@ -17,6 +17,7 @@ size_t LL_size(LinkedList list);
 // =================================== DATA ===================================
 
 // get the data of a node, given an index
+// returns NULL if the index is not valid (check with LL_is_valid_index)
 void *LL_get_data(LinkedList list, size_t index);
 
 // swap two values from the list
@@ -38,13 +39,16 @@ Node LL_insert_at(LinkedList list, void *data, size_t index);
 // delete the linked list without data
 void LL_soft_delete_list(LinkedList list);
 
-// delete the first node without its data
+// delete the first node without its data and return it
+// returns NULL if the list is empty (check with LL_is_empty_list)
 void *LL_soft_delete_first(LinkedList list);
 
-// delete the last node without its data
+// delete the last node without its data and return it
+// returns NULL if the list is empty (check with LL_is_empty_list)
 void *LL_soft_delete_last(LinkedList list);
 
-// delete the node without its data, given an index
+// delete the node without its data, given an index, and return it
+// returns NULL if the index is not valid (check with LL_is_valid_index)
 void *LL_soft_delete_at(LinkedList list, size_t index);
 
 // delete all nodes without their data from the list
