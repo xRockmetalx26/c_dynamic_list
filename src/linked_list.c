@@ -1,386 +1,414 @@
 #include <linked_list.h>
 
-#include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-// linked list implements
+// LINKED LIST IMPLEMENTS
 
 LinkedList LL_new_list() {
-    LinkedList list = (LinkedList) calloc(1, LINKED_LIST_SIZE);
-    if(!list) {
-        fprintf(stderr, "\nERROR in LL_new_list(), calloc() is null.\n");
-        return NULL;
-    }
+  LinkedList list = (LinkedList)calloc(1, LINKED_LIST_SIZE);
+  if (!list) {
+    fprintf(stderr, "\nERROR in LL_new_list(), calloc() is null.\n");
+    return NULL;
+  }
 
-    return list;
+  return list;
 }
 
-// node implements
+// NODE IMPLEMENTS
 
 Node new_node(void *data) {
-    Node node = (Node) calloc(1, NODE_SIZE);
-    if(!node) {
-        fprintf(stderr, "\nERROR in new_node(), calloc() is null.\n");
-        return NULL;
-    }
+  Node node = (Node)calloc(1, NODE_SIZE);
+  if (!node) {
+    fprintf(stderr, "\nERROR in new_node(), calloc() is null.\n");
+    return NULL;
+  }
 
-    node->data = data;
+  node->data = data;
 
-    return node;
+  return node;
 }
 
 Node get_node(LinkedList list, const size_t index) {
-    if(!LL_is_valid_index(list, index)) {
-        return NULL;
-    }
+  if (!LL_is_valid_index(list, index)) {
+    return NULL;
+  }
 
-    Node it = list->first;
-    for(size_t i = 0; i < index; i++) {
-        it = it->next;
-    }
+  Node it = list->first;
+  for (size_t i = 0; i < index; i++) {
+    it = it->next;
+  }
 
-    return it;
+  return it;
 }
 
-void* LL_get_data(LinkedList list, const size_t index) {
-    Node node = get_node(list, index);
-    if(!node) {
-        return NULL;
-    }
+void *LL_get_data(LinkedList list, const size_t index) {
+  Node node = get_node(list, index);
+  if (!node) {
+    return NULL;
+  }
 
-    return node->data;
+  return node->data;
 }
 
 void LL_swap_data(LinkedList list, size_t index_1, size_t index_2) {
-    if(LL_is_valid_index(list, index_1) && LL_is_valid_index(list, index_2)) {
-        Node node_1 = get_node(list, index_1);
-        void *data_copy = node_1->data;
-        Node node_2 = get_node(list, index_2);
-        node_1->data = node_2->data;
-        node_2->data = data_copy;
-    }
+  if (LL_is_valid_index(list, index_1) && LL_is_valid_index(list, index_2)) {
+    Node node_1 = get_node(list, index_1);
+    void *data_copy = node_1->data;
+    Node node_2 = get_node(list, index_2);
+    node_1->data = node_2->data;
+    node_2->data = data_copy;
+  }
 }
 
-// add implements
+// ADD IMPLEMENTS
 
 Node LL_add_first(LinkedList list, void *data) {
-    if(!LL_is_valid_add(list)) {
-        return NULL;
-    }
+  if (!LL_is_valid_add(list)) {
+    return NULL;
+  }
 
-    Node node = new_node(data);
-    if(!node) {
-        return NULL;
-    }
+  Node node = new_node(data);
+  if (!node) {
+    return NULL;
+  }
 
-    if(!list->first) {
-        list->first = list->last = node;
-    }
-    else {
-        node->next = list->first;
-        list->first = node;
-    }
+  if (!list->first) {
+    list->first = list->last = node;
+  } else {
+    node->next = list->first;
+    list->first = node;
+  }
 
-    list->size++;
+  list->size++;
 
-    return node;
+  return node;
 }
 
 Node LL_add_last(LinkedList list, void *data) {
-    if(!LL_is_valid_add(list)) {
-        return NULL;
-    }
+  if (!LL_is_valid_add(list)) {
+    return NULL;
+  }
 
-    Node node = new_node(data);
-    if(!node) {
-        return NULL;
-    }
+  Node node = new_node(data);
+  if (!node) {
+    return NULL;
+  }
 
-    if(!list->first) {
-        list->first = list->last = node;
-    }
-    else {
-        list->last = list->last->next = node;
-    }
+  if (!list->first) {
+    list->first = list->last = node;
+  } else {
+    list->last = list->last->next = node;
+  }
 
-    list->size++;
+  list->size++;
 
-    return node;
+  return node;
 }
 
 Node LL_insert_at(LinkedList list, void *data, const size_t index) {
-    if(!LL_is_valid_insert(list, index)) {
-        return NULL;
-    }
+  if (!LL_is_valid_insert(list, index)) {
+    return NULL;
+  }
 
-    if(!index) {
-        return LL_add_first(list, data);
-    }
+  if (!index) {
+    return LL_add_first(list, data);
+  }
 
-    Node node = new_node(data);
-    Node previous = get_node(list, index - 1);
-    node->next = previous->next;
-    previous->next = node;
-    list->size++;
+  if (index == list->size) {
+    return LL_add_last(list, data);
+  }
 
-    return node;
+  Node node = new_node(data);
+  if (!node) {
+    return NULL;
+  }
+
+  Node previous = get_node(list, index - 1);
+  node->next = previous->next;
+  previous->next = node;
+  list->size++;
+
+  return node;
 }
 
-// delete implements
+// DELETE IMPLEMENTS
 
-void delete_data(void *data, void (*deleter)(void*)) {
-    if(data) {
-        if(deleter) {
-            deleter(data);
-        }
-        else {
-            free(data);
-        }
+void delete_data(void *data, void (*deleter)(void *)) {
+  if (data) {
+    if (deleter) {
+      deleter(data);
+    } else {
+      free(data);
     }
+  }
 }
 
-// soft delete implements
+// SOFT DELETE IMPLEMENTS
 
 void LL_soft_delete_list(LinkedList list) {
-    if(LL_is_valid_list(list)) {
-        LL_soft_delete_all(list);
-        free(list);
-    }
+  if (LL_is_valid_list(list)) {
+    LL_soft_delete_all(list);
+    free(list);
+  }
 }
 
-void* LL_soft_delete_first(LinkedList list) {
-    if(LL_is_empty_list(list)) {
-        return NULL;
-    }
+void *LL_soft_delete_first(LinkedList list) {
+  if (LL_is_empty_list(list)) {
+    return NULL;
+  }
 
-    Node to_delete = list->first;
-    void *data = to_delete->data;
-    list->first = list->first->next;
-    list->size--;
+  Node to_delete = list->first;
+  void *data = to_delete->data;
+  list->first = list->first->next;
+  list->size--;
 
-    free(to_delete);
+  if (!list->first) {
+    list->last = NULL;
+  }
 
-    return data;
+  free(to_delete);
+
+  return data;
 }
 
-void* LL_soft_delete_last(LinkedList list) {
-    if(LL_is_empty_list(list)) {
-        return NULL;
-    }
+void *LL_soft_delete_last(LinkedList list) {
+  if (LL_is_empty_list(list)) {
+    return NULL;
+  }
 
-    if(list->size == 1) {
-        return LL_soft_delete_first(list);
-    }
+  if (list->size == 1) {
+    return LL_soft_delete_first(list);
+  }
 
-    Node previous = get_node(list, list->size - 2);
-    Node to_delete = previous->next;
-    void *data = to_delete->data;
-    previous->next = NULL;
+  Node previous = get_node(list, list->size - 2);
+  Node to_delete = previous->next;
+  void *data = to_delete->data;
+  previous->next = NULL;
+  list->last = previous;
+  list->size--;
+
+  free(to_delete);
+
+  return data;
+}
+
+void *LL_soft_delete_at(LinkedList list, const size_t index) {
+  if (!LL_is_valid_index(list, index)) {
+    return NULL;
+  }
+
+  if (!index) {
+    return LL_soft_delete_first(list);
+  }
+
+  Node previous = get_node(list, index - 1);
+  Node to_delete = previous->next;
+  void *data = to_delete->data;
+  previous->next = to_delete->next;
+
+  if (to_delete == list->last) {
     list->last = previous;
-    list->size--;
+  }
 
-    free(to_delete);
+  list->size--;
 
-    return data;
-}
+  free(to_delete);
 
-void* LL_soft_delete_at(LinkedList list, const size_t index) {
-    if(!LL_is_valid_index(list, index)) {
-        return NULL;
-    }
-
-    if(!index) {
-        return LL_soft_delete_at(list, index);
-    }
-
-    Node previous = get_node(list, index - 1);
-    Node to_delete = previous->next;
-    void *data = to_delete->data;
-    previous->next = to_delete->next;
-    list->size--;
-
-    free(to_delete);
-
-    return data;
+  return data;
 }
 
 void LL_soft_delete_all(LinkedList list) {
-    if(LL_is_empty_list(list)) {
-        return;
-    }
+  if (LL_is_empty_list(list)) {
+    return;
+  }
 
-    Node it = list->first;
-    Node to_delete;
-    while(it) {
-        to_delete = it;
-        it = it->next;
+  Node it = list->first;
+  Node to_delete;
+  while (it) {
+    to_delete = it;
+    it = it->next;
 
-        free(to_delete);
-    }
+    free(to_delete);
+  }
 
-    list->last = list->first = NULL;
-    list->size = 0;
+  list->last = list->first = NULL;
+  list->size = 0;
 }
 
-// hard delete implements
+// HARD DELETE IMPLEMENTS
 
-void LL_hard_delete_list(LinkedList list, void (*deleter)(void*)) {
-    if(LL_is_valid_list(list)) {
-        LL_hard_delete_all(list, deleter);
-        free(list);
-    }
+void LL_hard_delete_list(LinkedList list, void (*deleter)(void *)) {
+  if (LL_is_valid_list(list)) {
+    LL_hard_delete_all(list, deleter);
+    free(list);
+  }
 }
 
-void LL_hard_delete_first(LinkedList list, void (*deleter)(void*)) {
-    delete_data(LL_soft_delete_first(list), deleter);
+void LL_hard_delete_first(LinkedList list, void (*deleter)(void *)) {
+  delete_data(LL_soft_delete_first(list), deleter);
 }
 
-void LL_hard_delete_last(LinkedList list, void (*deleter)(void*)) {
-    delete_data(LL_soft_delete_last(list), deleter);
+void LL_hard_delete_last(LinkedList list, void (*deleter)(void *)) {
+  delete_data(LL_soft_delete_last(list), deleter);
 }
 
-void LL_hard_delete_at(LinkedList list, const size_t index, void (*deleter)(void*)) {
-    delete_data(LL_soft_delete_at(list, index), deleter);
+void LL_hard_delete_at(LinkedList list, const size_t index,
+                       void (*deleter)(void *)) {
+  delete_data(LL_soft_delete_at(list, index), deleter);
 }
 
-void LL_hard_delete_all(LinkedList list, void (*deleter)(void*)) {
-    if(LL_is_empty_list(list)) {
-        return;
-    }
+void LL_hard_delete_all(LinkedList list, void (*deleter)(void *)) {
+  if (LL_is_empty_list(list)) {
+    return;
+  }
 
-    Node it = list->first;
-    Node to_delete;
-    while(it) {
-        to_delete = it;
-        it = it->next;
+  Node it = list->first;
+  Node to_delete;
+  while (it) {
+    to_delete = it;
+    it = it->next;
 
-        delete_data(to_delete->data, deleter);
-        free(to_delete);
-    }
+    delete_data(to_delete->data, deleter);
+    free(to_delete);
+  }
 
-    list->last = list->first = NULL;
-    list->size = 0;
+  list->last = list->first = NULL;
+  list->size = 0;
 }
 
-// validations list implements
+// VALIDATIONS LIST IMPLEMENTS
 
 bool LL_is_valid_list(LinkedList list) {
-    if(!list) {
-        fprintf(stderr, "\nERROR in LL_is_valid_list(), linked list is null.\n");
-        return false;
-    }
+  if (!list) {
+    fprintf(stderr, "\nERROR in LL_is_valid_list(), linked list is null.\n");
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 bool LL_is_empty_list(LinkedList list) {
-    if(!LL_is_valid_list(list)) {
-        return false;
-    }
+  if (!LL_is_valid_list(list)) {
+    return true;
+  }
 
-    return list->size ? false : true;
+  return list->size ? false : true;
 }
 
 bool LL_is_full_list(LinkedList list) {
-    if(!LL_is_valid_list(list)) {
-        return false;
-    }
+  if (!LL_is_valid_list(list)) {
+    return false;
+  }
 
-    return list->size == ULONG_LONG_MAX ? true : false;
+  return list->size == ULONG_LONG_MAX ? true : false;
 }
 
-// index, add, insert validations implements
+// INDEX, ADD, INSERT VALIDATIONS IMPLEMENTS
 
 bool LL_contains(LinkedList list, void *data) {
-    if(LL_is_empty_list(list)) {
-        return false;
-    }
-
-    for(Node it = list->first; it; it = it->next) {
-        if(it->data == data) {
-            return true;
-        }
-    }
-
+  if (LL_is_empty_list(list)) {
     return false;
+  }
+
+  for (Node it = list->first; it; it = it->next) {
+    if (it->data == data) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool LL_is_valid_index(LinkedList list, const size_t index) {
-    if(LL_is_empty_list(list)) {
-        return false;
-    }
+  if (LL_is_empty_list(list)) {
+    return false;
+  }
 
-    if(index >= list->size) {
-        fprintf(stderr, "\nERROR in LL_is_valid_index(), index >= linked list size.\n");
-        return false;
-    }
+  if (index >= list->size) {
+    fprintf(stderr,
+            "\nERROR in LL_is_valid_index(), index >= linked list size.\n");
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
 bool LL_is_valid_add(LinkedList list) {
-    return LL_is_full_list(list) ? false : true;
+  if (!LL_is_valid_list(list)) {
+    return false;
+  }
+
+  return LL_is_full_list(list) ? false : true;
 }
 
 bool LL_is_valid_insert(LinkedList list, const size_t index) {
-    return (LL_is_valid_add(list) && LL_is_valid_index(list, index)) ? true : false;
+  if (!LL_is_valid_add(list)) {
+    return false;
+  }
+
+  if (index > list->size) {
+    fprintf(stderr,
+            "\nERROR in LL_is_valid_insert(), index > linked list size.\n");
+    return false;
+  }
+
+  return true;
 }
 
-// utilities
+// UTILITIES
 
-LinkedList LL_copy(LinkedList list, const size_t size_data) {
-    if(LL_is_empty_list(list)) {
-        return list;
-    }
+LinkedList LL_copy(LinkedList list, const size_t size_data,
+                   void *(*copier)(const void *)) {
+  if (!LL_is_valid_list(list)) {
+    return NULL;
+  }
 
-    LinkedList list_copy = LL_new_list();
-    if(!list_copy) {
-        fprintf(stderr, "\nERROR in LL_copy(), LL_new_list() is null.\n");
-        return NULL;
-    }
+  LinkedList list_copy = LL_new_list();
+  if (!list_copy) {
+    fprintf(stderr, "\nERROR in LL_copy(), LL_new_list() is null.\n");
+    return NULL;
+  }
 
-    void *data;
-    for(Node it = list->first; it; it = it->next) {
-        data = malloc(size_data);
-        if(!data) {
-            fprintf(stderr, "\nERROR in LL_copy(), malloc() is null.\n");
-            return NULL;
-        }
-
+  void *data;
+  for (Node it = list->first; it; it = it->next) {
+    if (copier) {
+      data = copier(it->data);
+    } else {
+      data = malloc(size_data);
+      if (data) {
         memcpy(data, it->data, size_data);
-        LL_add_last(list_copy, data);
+      }
     }
 
-    return list_copy;
+    if (!data) {
+      fprintf(stderr, "\nERROR in LL_copy(), data copy is null.\n");
+      LL_hard_delete_list(list_copy, NULL);
+      return NULL;
+    }
+
+    if (!LL_add_last(list_copy, data)) {
+      free(data);
+      LL_hard_delete_list(list_copy, NULL);
+      return NULL;
+    }
+  }
+
+  return list_copy;
 }
 
 LinkedList LL_reverse(LinkedList list) {
-    if(LL_is_empty_list(list) || list->size == 1) {
-        return list;
-    }
-
-    const size_t mid_data = list->size / 2;
-
-    for(size_t i = 0; i < mid_data; i++) {
-        LL_swap_data(list, i, list->size - 1 - i);
-    }
-
+  if (LL_is_empty_list(list) || list->size == 1) {
     return list;
-}
+  }
 
-LinkedList LL_randomize(LinkedList list) {
-    if(LL_is_empty_list(list) || list->size == 1) {
-        return list;
-    }
+  const size_t mid_data = list->size / 2;
 
-    srand(time(NULL));
+  for (size_t i = 0; i < mid_data; i++) {
+    LL_swap_data(list, i, list->size - 1 - i);
+  }
 
-    for(size_t i = 0; i < list->size; i++) {
-        LL_swap_data(list, i, rand() % list->size);
-    }
-
-    return list;
+  return list;
 }

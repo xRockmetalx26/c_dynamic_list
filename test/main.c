@@ -50,6 +50,13 @@ void delete_data2(void *data) {
     }
 }
 
+// DEEP COPY FOR LL_copy: NEW Data WITH ITS OWN Student
+void* copy_data(const void *data) {
+    const struct _Data *source = data;
+
+    return new_data(source->student->name, source->student->id);
+}
+
 void print_students(LinkedList list) {
     for(Node it = list->first; it; it = it->next) {
         Data data = (Data) it->data;
@@ -76,12 +83,8 @@ int main() {
     LL_reverse(list);
     print_students(list);
 
-    puts("\nrandomize list:");
-    LL_randomize(list);
-    print_students(list);
-
     puts("\ncopy list:");
-    LinkedList list_copy = LL_copy(list, DATA_SIZE);
+    LinkedList list_copy = LL_copy(list, DATA_SIZE, copy_data);
     print_students(list_copy);
 
     printf("%i\n", LL_contains(list, data2));
