@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-// PRIVATE STRUCTS (OPAQUE OUTSIDE THIS FILE)
+// ============================= PRIVATE STRUCTS ==============================
 
-struct ll_node {
+struct node {
   void *data;
-  struct ll_node *next;
+  struct node *next;
 };
 
 struct linked_list {
@@ -16,10 +16,10 @@ struct linked_list {
   size_t size;
 };
 
-#define NODE_SIZE sizeof(struct ll_node)
+#define NODE_SIZE sizeof(struct node)
 #define LINKED_LIST_SIZE sizeof(struct linked_list)
 
-// LINKED LIST IMPLEMENTS
+// =============================== LINKED LIST ================================
 
 LinkedList LL_new_list() {
   return (LinkedList)calloc(1, LINKED_LIST_SIZE);
@@ -29,7 +29,7 @@ size_t LL_size(LinkedList list) {
   return list ? list->size : 0;
 }
 
-// NODE IMPLEMENTS
+// ============================== NODE (PRIVATE) ==============================
 
 static Node new_node(void *data) {
   Node node = (Node)calloc(1, NODE_SIZE);
@@ -54,6 +54,8 @@ static Node get_node(LinkedList list, const size_t index) {
 
   return it;
 }
+
+// =================================== DATA ===================================
 
 void *LL_get_data(LinkedList list, const size_t index) {
   Node node = get_node(list, index);
@@ -92,7 +94,7 @@ void LL_swap_data(LinkedList list, size_t index_1, size_t index_2) {
   node_2->data = data_copy;
 }
 
-// ADD IMPLEMENTS
+// =================================== ADD ====================================
 
 Node LL_add_first(LinkedList list, void *data) {
   if (!LL_is_valid_add(list)) {
@@ -163,7 +165,7 @@ Node LL_insert_at(LinkedList list, void *data, const size_t index) {
   return node;
 }
 
-// DELETE IMPLEMENTS
+// ============================= DELETE (PRIVATE) =============================
 
 static void delete_data(void *data, void (*deleter)(void *)) {
   if (data) {
@@ -175,7 +177,7 @@ static void delete_data(void *data, void (*deleter)(void *)) {
   }
 }
 
-// SOFT DELETE IMPLEMENTS
+// =============================== SOFT DELETE ================================
 
 void LL_soft_delete_list(LinkedList list) {
   if (LL_is_valid_list(list)) {
@@ -267,7 +269,7 @@ void LL_soft_delete_all(LinkedList list) {
   list->size = 0;
 }
 
-// HARD DELETE IMPLEMENTS
+// =============================== HARD DELETE ================================
 
 void LL_hard_delete_list(LinkedList list, void (*deleter)(void *)) {
   if (LL_is_valid_list(list)) {
@@ -308,7 +310,7 @@ void LL_hard_delete_all(LinkedList list, void (*deleter)(void *)) {
   list->size = 0;
 }
 
-// VALIDATIONS LIST IMPLEMENTS
+// ============================= LIST VALIDATIONS =============================
 
 bool LL_is_valid_list(LinkedList list) {
   return list ? true : false;
@@ -330,7 +332,7 @@ bool LL_is_full_list(LinkedList list) {
   return list->size == SIZE_MAX ? true : false;
 }
 
-// INDEX, ADD, INSERT VALIDATIONS IMPLEMENTS
+// ====================== INDEX, ADD, INSERT VALIDATIONS ======================
 
 bool LL_contains(LinkedList list, void *data) {
   if (LL_is_empty_list(list)) {
@@ -370,7 +372,7 @@ bool LL_is_valid_insert(LinkedList list, const size_t index) {
   return index <= list->size;
 }
 
-// UTILITIES
+// ================================ UTILITIES =================================
 
 LinkedList LL_copy(LinkedList list, const size_t size_data,
                    void *(*copier)(const void *), void (*deleter)(void *)) {
@@ -428,4 +430,14 @@ LinkedList LL_reverse(LinkedList list) {
   list->first = previous;
 
   return list;
+}
+
+void LL_for_each(LinkedList list, void (*action)(void *)) {
+  if (LL_is_empty_list(list) || !action) {
+    return;
+  }
+
+  for (Node it = list->first; it; it = it->next) {
+    action(it->data);
+  }
 }
