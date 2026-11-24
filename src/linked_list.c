@@ -3,15 +3,35 @@
 #include <stdlib.h>
 #include <string.h>
 
+// PRIVATE STRUCTS (OPAQUE OUTSIDE THIS FILE)
+
+struct ll_node {
+  void *data;
+  struct ll_node *next;
+};
+
+struct linked_list {
+  Node first;
+  Node last;
+  size_t size;
+};
+
+#define NODE_SIZE sizeof(struct ll_node)
+#define LINKED_LIST_SIZE sizeof(struct linked_list)
+
 // LINKED LIST IMPLEMENTS
 
 LinkedList LL_new_list() {
   return (LinkedList)calloc(1, LINKED_LIST_SIZE);
 }
 
+size_t LL_size(LinkedList list) {
+  return list ? list->size : 0;
+}
+
 // NODE IMPLEMENTS
 
-Node new_node(void *data) {
+static Node new_node(void *data) {
   Node node = (Node)calloc(1, NODE_SIZE);
   if (!node) {
     return NULL;
@@ -22,7 +42,7 @@ Node new_node(void *data) {
   return node;
 }
 
-Node get_node(LinkedList list, const size_t index) {
+static Node get_node(LinkedList list, const size_t index) {
   if (!LL_is_valid_index(list, index)) {
     return NULL;
   }
@@ -145,7 +165,7 @@ Node LL_insert_at(LinkedList list, void *data, const size_t index) {
 
 // DELETE IMPLEMENTS
 
-void delete_data(void *data, void (*deleter)(void *)) {
+static void delete_data(void *data, void (*deleter)(void *)) {
   if (data) {
     if (deleter) {
       deleter(data);

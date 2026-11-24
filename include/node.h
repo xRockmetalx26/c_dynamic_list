@@ -1,11 +1,6 @@
 #ifndef NODE_H
 #define NODE_H
 
-#define NODE_SIZE sizeof(struct _Node)
-
-typedef struct _Node {
-  void *data;
-  struct _Node *next;
-} *Node;
+typedef struct ll_node *Node;
 
 #endif // NODE_H

@@ -57,8 +57,8 @@ void* copy_data(const void *data) {
 }
 
 void print_students(LinkedList list) {
-    for(Node it = list->first; it; it = it->next) {
-        Data data = (Data) it->data;
+    for(size_t i = 0; i < LL_size(list); i++) {
+        Data data = (Data) LL_get_data(list, i);
 
         printf("Name: %s, Age: %llu\n", data->student->name, data->student->id);
     }
