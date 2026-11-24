@@ -1,19 +1,12 @@
 #include <linked_list.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // LINKED LIST IMPLEMENTS
 
 LinkedList LL_new_list() {
-  LinkedList list = (LinkedList)calloc(1, LINKED_LIST_SIZE);
-  if (!list) {
-    fprintf(stderr, "\nERROR in LL_new_list(), calloc() is null.\n");
-    return NULL;
-  }
-
-  return list;
+  return (LinkedList)calloc(1, LINKED_LIST_SIZE);
 }
 
 // NODE IMPLEMENTS
@@ -21,7 +14,6 @@ LinkedList LL_new_list() {
 Node new_node(void *data) {
   Node node = (Node)calloc(1, NODE_SIZE);
   if (!node) {
-    fprintf(stderr, "\nERROR in new_node(), calloc() is null.\n");
     return NULL;
   }
 
@@ -299,12 +291,7 @@ void LL_hard_delete_all(LinkedList list, void (*deleter)(void *)) {
 // VALIDATIONS LIST IMPLEMENTS
 
 bool LL_is_valid_list(LinkedList list) {
-  if (!list) {
-    fprintf(stderr, "\nERROR in LL_is_valid_list(), linked list is null.\n");
-    return false;
-  }
-
-  return true;
+  return list ? true : false;
 }
 
 bool LL_is_empty_list(LinkedList list) {
@@ -344,13 +331,7 @@ bool LL_is_valid_index(LinkedList list, const size_t index) {
     return false;
   }
 
-  if (index >= list->size) {
-    fprintf(stderr,
-            "\nERROR in LL_is_valid_index(), index >= linked list size.\n");
-    return false;
-  }
-
-  return true;
+  return index < list->size;
 }
 
 bool LL_is_valid_add(LinkedList list) {
@@ -366,26 +347,19 @@ bool LL_is_valid_insert(LinkedList list, const size_t index) {
     return false;
   }
 
-  if (index > list->size) {
-    fprintf(stderr,
-            "\nERROR in LL_is_valid_insert(), index > linked list size.\n");
-    return false;
-  }
-
-  return true;
+  return index <= list->size;
 }
 
 // UTILITIES
 
 LinkedList LL_copy(LinkedList list, const size_t size_data,
-                   void *(*copier)(const void *)) {
+                   void *(*copier)(const void *), void (*deleter)(void *)) {
   if (!LL_is_valid_list(list)) {
     return NULL;
   }
 
   LinkedList list_copy = LL_new_list();
   if (!list_copy) {
-    fprintf(stderr, "\nERROR in LL_copy(), LL_new_list() is null.\n");
     return NULL;
   }
 
@@ -401,14 +375,13 @@ LinkedList LL_copy(LinkedList list, const size_t size_data,
     }
 
     if (!data) {
-      fprintf(stderr, "\nERROR in LL_copy(), data copy is null.\n");
-      LL_hard_delete_list(list_copy, NULL);
+      LL_hard_delete_list(list_copy, deleter);
       return NULL;
     }
 
     if (!LL_add_last(list_copy, data)) {
-      free(data);
-      LL_hard_delete_list(list_copy, NULL);
+      delete_data(data, deleter);
+      LL_hard_delete_list(list_copy, deleter);
       return NULL;
     }
   }

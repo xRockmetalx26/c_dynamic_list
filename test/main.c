@@ -83,7 +83,7 @@ int main() {
     print_students(list);
 
     puts("\ncopy list:");
-    LinkedList list_copy = LL_copy(list, DATA_SIZE, copy_data);
+    LinkedList list_copy = LL_copy(list, DATA_SIZE, copy_data, delete_data2);
     print_students(list_copy);
 
     printf("%i\n", LL_contains(list, data2));

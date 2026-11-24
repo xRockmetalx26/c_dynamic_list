@@ -65,9 +65,10 @@ bool LL_is_valid_add(LinkedList list);
 // checks if valid insert in list
 bool LL_is_valid_insert(LinkedList list, size_t index);
 
-// copy a list (shallow: memcpy of size_data bytes per data)
+// copy a list (copier: deep copy; NULL: memcpy of size_data bytes)
+// (deleter: frees the copied data if the copy fails; NULL: free)
 LinkedList LL_copy(LinkedList list, size_t size_data,
-                   void *(*copier)(const void *));
+                   void *(*copier)(const void *), void (*deleter)(void *));
 // reverse a list
 LinkedList LL_reverse(LinkedList list);
 #endif // LINKED_LIST_H
