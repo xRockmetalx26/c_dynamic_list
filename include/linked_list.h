@@ -9,6 +9,11 @@ typedef struct linked_list *LinkedList;
 // different from nullptr, which is valid data stored in the list
 extern void *const LL_ERROR;
 
+// while the list runs a callback (for_each action, hard_delete_all deleter,
+// copy copier) it is locked: adding or deleting fails (LL_ERROR or no
+// effect), so a callback can't break the list
+// only exception: the for_each action may delete the node it is visiting
+
 // =============================== LINKED LIST ================================
 
 // create a linked list
@@ -113,6 +118,7 @@ LinkedList LL_copy(LinkedList list, size_t size_data,
 LinkedList LL_reverse(LinkedList list);
 
 // call action with the data of every node, from first to last (O(n))
+// the action may delete the current node, any other change is blocked
 void LL_for_each(LinkedList list, void (*action)(void *));
 
 #endif // LINKED_LIST_H

@@ -418,6 +418,16 @@ TEST(test_hard_delete_all_and_list) {
   CHECK(deleter_calls == 1);
 }
 
+// heap list with the ints 0..count-1 (owned by the list)
+static LinkedList new_owned_list_of(int count) {
+  LinkedList list = LL_new_list();
+  for (int i = 0; i < count; i++) {
+    LL_add_last(list, new_int(i));
+  }
+
+  return list;
+}
+
 // ============================= LIST VALIDATIONS =============================
 
 TEST(test_list_validations) {
@@ -640,6 +650,119 @@ TEST(test_for_each) {
   LL_soft_delete_list(list);
 }
 
+// action that records the value and deletes the CURRENT node (always first)
+static LinkedList for_each_list;
+static void record_and_delete_action(void *data) {
+  record_action(data);
+  LL_soft_delete_first(for_each_list);
+}
+
+TEST(test_for_each_delete_current) {
+  // AUDIT: the action deleted the current node and for_each read it after
+  for_each_list = new_list_of(4);
+
+  visited_count = 0;
+  LL_for_each(for_each_list, record_and_delete_action);
+  CHECK(visited_count == 4);
+  CHECK(memcmp(visited, (int[]){0, 1, 2, 3}, 4 * sizeof(int)) == 0);
+  CHECK(LL_is_empty_list(for_each_list));
+
+  LL_soft_delete_list(for_each_list);
+}
+
+// counts forbidden operations that a callback could do on a locked list
+static LinkedList locked_list;
+static int lock_violations = 0;
+
+static void nested_delete_action(void *data) {
+  (void)data;
+  // a nested for_each can't delete anything (not even its current node)
+  if (LL_soft_delete_first(locked_list) != LL_ERROR) lock_violations++;
+}
+
+static void abusive_action(void *data) {
+  if (data != &values[0]) return; // abuse only while visiting the first node
+
+  // adding is blocked
+  if (LL_add_first(locked_list, &values[9]) != LL_ERROR) lock_violations++;
+  if (LL_add_last(locked_list, &values[9]) != LL_ERROR) lock_violations++;
+  if (LL_insert_at(locked_list, &values[9], 1) != LL_ERROR) lock_violations++;
+
+  // deleting any node other than the current one is blocked
+  if (LL_soft_delete_last(locked_list) != LL_ERROR) lock_violations++;
+  if (LL_soft_delete_at(locked_list, 1) != LL_ERROR) lock_violations++;
+  LL_soft_delete_all(locked_list);
+  LL_hard_delete_all(locked_list, nullptr);
+  LL_reverse(locked_list);
+  LL_soft_delete_list(locked_list);
+  LL_hard_delete_list(locked_list, nullptr);
+  LL_for_each(locked_list, nested_delete_action);
+  if (!list_equals(locked_list, (int[]){0, 1, 2, 3}, 4)) lock_violations++;
+
+  // reading is allowed
+  if (LL_get_data(locked_list, 3) != &values[3]) lock_violations++;
+
+  // the current node can be deleted, but only once
+  if (LL_soft_delete_first(locked_list) != &values[0]) lock_violations++;
+  if (LL_soft_delete_first(locked_list) != LL_ERROR) lock_violations++;
+}
+
+TEST(test_for_each_lock) {
+  locked_list = new_list_of(4);
+  lock_violations = 0;
+
+  LL_for_each(locked_list, abusive_action);
+  CHECK(lock_violations == 0);
+  CHECK(list_equals(locked_list, (int[]){1, 2, 3}, 3));
+
+  // the list is unlocked again after for_each
+  CHECK(LL_add_last(locked_list, &values[4]) == &values[4]);
+  CHECK(LL_soft_delete_first(locked_list) == &values[1]);
+  CHECK(list_equals(locked_list, (int[]){2, 3, 4}, 3));
+
+  LL_soft_delete_list(locked_list);
+}
+
+// deleter that checks the list is consistent and locked while it runs
+static size_t expected_size = 0;
+static void checking_deleter(void *data) {
+  free(data);
+  expected_size--;
+  if (LL_size(locked_list) != expected_size) lock_violations++;
+  if (expected_size && LL_get_data(locked_list, 0) == LL_ERROR) {
+    lock_violations++;
+  }
+  if (LL_add_last(locked_list, &values[9]) != LL_ERROR) lock_violations++;
+  if (LL_soft_delete_first(locked_list) != LL_ERROR) lock_violations++;
+  LL_hard_delete_list(locked_list, nullptr); // must have no effect
+}
+
+static void *deleting_copier(const void *data) {
+  if (LL_soft_delete_first(locked_list) != LL_ERROR) lock_violations++;
+  return new_int(*(const int *)data);
+}
+
+TEST(test_callbacks_lock) {
+  // AUDIT: hard_delete_all left the list corrupt while the deleter ran
+  locked_list = new_owned_list_of(4);
+  expected_size = 4;
+  lock_violations = 0;
+  LL_hard_delete_all(locked_list, checking_deleter);
+  CHECK(lock_violations == 0);
+  CHECK(LL_is_empty_list(locked_list));
+
+  // copy: the copier can't modify the source list
+  LL_hard_delete_list(locked_list, nullptr);
+  locked_list = new_owned_list_of(2);
+  LinkedList copy = LL_copy(locked_list, 0, deleting_copier, nullptr);
+  CHECK(lock_violations == 0);
+  CHECK(list_equals(copy, (int[]){0, 1}, 2));
+  CHECK(list_equals(locked_list, (int[]){0, 1}, 2));
+
+  LL_hard_delete_list(copy, nullptr);
+  LL_hard_delete_list(locked_list, nullptr);
+}
+
 // =================================== MAIN ===================================
 
 int main() {
@@ -673,6 +796,9 @@ int main() {
   RUN(test_copy_errors);
   RUN(test_reverse);
   RUN(test_for_each);
+  RUN(test_for_each_delete_current);
+  RUN(test_for_each_lock);
+  RUN(test_callbacks_lock);
 
   printf("\n%d checks, %d failed\n", tests_run, tests_failed);
 

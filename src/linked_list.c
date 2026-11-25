@@ -14,6 +14,7 @@ struct linked_list {
   Node first;
   Node last;
   size_t size;
+  Node lock; // nullptr: FREE, A NODE: ONLY IT CAN BE DELETED, LOCKED: NOTHING
 };
 
 #define NODE_SIZE sizeof(struct node)
@@ -24,6 +25,22 @@ struct linked_list {
 // UNIQUE ADDRESS: NO VALID DATA CAN EVER POINT HERE
 static char error;
 void *const LL_ERROR = &error;
+
+// ============================== LOCK (PRIVATE) ==============================
+
+// SENTINEL: NEVER A NODE OF A LIST, SO NO NODE CAN BE DELETED
+static struct node locked;
+#define LOCKED (&locked)
+
+// WHILE A USER CALLBACK RUNS, THE LIST CAN'T BE MODIFIED...
+static bool is_locked(LinkedList list) {
+  return list->lock != nullptr;
+}
+
+// ...EXCEPT FOR THE NODE THAT for_each IS VISITING, WHICH CAN BE DELETED
+static bool can_delete(LinkedList list, Node node) {
+  return !is_locked(list) || node == list->lock;
+}
 
 // =============================== LINKED LIST ================================
 
@@ -151,10 +168,33 @@ static void delete_data(void *data, void (*deleter)(void *)) {
   }
 }
 
+// UNLINK AND FREE THE NODE AFTER previous (nullptr: THE FIRST NODE)
+// THE ONLY PLACE WHERE A SINGLE NODE IS DELETED (AND THE LOCK IS CHECKED)
+static void *unlink_node(LinkedList list, Node previous) {
+  Node node = previous ? previous->next : list->first;
+  if (!can_delete(list, node)) return LL_ERROR;
+  if (previous) {
+    previous->next = node->next;
+  } else {
+    list->first = node->next;
+  }
+  if (node == list->last) list->last = previous;
+
+  list->size--;
+
+  if (node == list->lock) list->lock = LOCKED;
+
+  void *data = node->data;
+
+  free(node);
+
+  return data;
+}
+
 // =============================== SOFT DELETE ================================
 
 void LL_soft_delete_list(LinkedList list) {
-  if (LL_is_valid_list(list)) {
+  if (LL_is_valid_list(list) && !is_locked(list)) {
     LL_soft_delete_all(list);
     free(list);
   }
@@ -163,57 +203,29 @@ void LL_soft_delete_list(LinkedList list) {
 void *LL_soft_delete_first(LinkedList list) {
   if (LL_is_empty_list(list)) return LL_ERROR;
 
-  Node to_delete = list->first;
-  void *data = to_delete->data;
-  list->first = list->first->next;
-  list->size--;
-
-  if (!list->first) list->last = nullptr;
-
-  free(to_delete);
-
-  return data;
+  return unlink_node(list, nullptr);
 }
 
 void *LL_soft_delete_last(LinkedList list) {
   if (LL_is_empty_list(list)) return LL_ERROR;
-  if (list->size == 1) return LL_soft_delete_first(list);
 
-  Node previous = get_node(list, list->size - 2);
-  Node to_delete = previous->next;
-  void *data = to_delete->data;
-  previous->next = nullptr;
-  list->last = previous;
-  list->size--;
+  const size_t size = list->size;
 
-  free(to_delete);
-
-  return data;
+  return unlink_node(list, size == 1 ? nullptr : get_node(list, size - 2));
 }
 
 void *LL_soft_delete_at(LinkedList list, const size_t index) {
   if (!LL_is_valid_index(list, index)) return LL_ERROR;
-  if (!index) return LL_soft_delete_first(list);
 
-  Node previous = get_node(list, index - 1);
-  Node to_delete = previous->next;
-  void *data = to_delete->data;
-  previous->next = to_delete->next;
-
-  if (to_delete == list->last) list->last = previous;
-
-  list->size--;
-
-  free(to_delete);
-
-  return data;
+  return unlink_node(list, index ? get_node(list, index - 1) : nullptr);
 }
 
 void LL_soft_delete_all(LinkedList list) {
-  if (LL_is_empty_list(list)) return;
+  if (LL_is_empty_list(list) || is_locked(list)) return;
 
   Node it = list->first;
   Node to_delete;
+
   while (it) {
     to_delete = it;
     it = it->next;
@@ -228,7 +240,7 @@ void LL_soft_delete_all(LinkedList list) {
 // =============================== HARD DELETE ================================
 
 void LL_hard_delete_list(LinkedList list, void (*deleter)(void *)) {
-  if (LL_is_valid_list(list)) {
+  if (LL_is_valid_list(list) && !is_locked(list)) {
     LL_hard_delete_all(list, deleter);
     free(list);
   }
@@ -248,20 +260,20 @@ void LL_hard_delete_at(LinkedList list, const size_t index,
 }
 
 void LL_hard_delete_all(LinkedList list, void (*deleter)(void *)) {
-  if (LL_is_empty_list(list)) return;
+  if (LL_is_empty_list(list) || is_locked(list)) return;
 
-  Node it = list->first;
-  Node to_delete;
-  while (it) {
-    to_delete = it;
-    it = it->next;
+  list->lock = LOCKED;
+  while (list->first) {
+    Node to_delete = list->first;
+    list->first = to_delete->next;
+    list->size--;
+
+    if (!list->first) list->last = nullptr;
 
     delete_data(to_delete->data, deleter);
     free(to_delete);
   }
-
-  list->last = list->first = nullptr;
-  list->size = 0;
+  list->lock = nullptr;
 }
 
 // ============================= LIST VALIDATIONS =============================
@@ -302,7 +314,7 @@ bool LL_is_valid_index(LinkedList list, const size_t index) {
 }
 
 bool LL_is_valid_add(LinkedList list) {
-  if (!LL_is_valid_list(list)) return false;
+  if (!LL_is_valid_list(list) || is_locked(list)) return false;
 
   return LL_is_full_list(list) ? false : true;
 }
@@ -322,29 +334,45 @@ LinkedList LL_copy(LinkedList list, const size_t size_data,
   LinkedList list_copy = LL_new_list();
   if (!list_copy) return nullptr;
 
+  bool failed = false;
+  const Node saved_lock = list->lock;
+  list->lock = LOCKED;
+
   for (Node it = list->first; it; it = it->next) {
     void *data = nullptr;
     if (it->data) {
       data = copier ? copier(it->data) : malloc(size_data);
       if (!data) {
-        LL_hard_delete_list(list_copy, deleter);
-        return nullptr;
+        failed = true;
+        break;
       }
       if (!copier) memcpy(data, it->data, size_data);
     }
 
     if (LL_add_last(list_copy, data) == LL_ERROR) {
       delete_data(data, deleter);
-      LL_hard_delete_list(list_copy, deleter);
-      return nullptr;
+
+      failed = true;
+
+      break;
     }
+  }
+
+  list->lock = saved_lock;
+
+  if (failed) {
+    LL_hard_delete_list(list_copy, deleter);
+
+    return nullptr;
   }
 
   return list_copy;
 }
 
 LinkedList LL_reverse(LinkedList list) {
-  if (LL_is_empty_list(list) || list->size == 1) return list;
+  if (LL_is_empty_list(list) || list->size == 1 || is_locked(list)) {
+    return list;
+  }
 
   Node previous = nullptr;
   Node current = list->first;
@@ -365,7 +393,16 @@ LinkedList LL_reverse(LinkedList list) {
 void LL_for_each(LinkedList list, void (*action)(void *)) {
   if (LL_is_empty_list(list) || !action) return;
 
-  for (Node it = list->first; it; it = it->next) {
+  const Node saved_lock = list->lock;
+
+  for (Node it = list->first; it;) {
+    Node next = it->next;
+    list->lock = saved_lock ? LOCKED : it;
+
     action(it->data);
+
+    it = next;
   }
+
+  list->lock = saved_lock;
 }
