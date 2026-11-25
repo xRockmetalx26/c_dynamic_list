@@ -3,11 +3,26 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct linked_list *LinkedList;
 
 // returned when an operation fails (invalid index, empty list, not added)
 // different from nullptr, which is valid data stored in the list
 extern void *const LL_ERROR;
+
+// ================================ CALLBACKS =================================
+
+// frees the data of a node (nullptr: free is used)
+typedef void (*LL_Deleter)(void *data);
+
+// returns a deep copy of the data, or nullptr if it fails
+typedef void *(*LL_Copier)(const void *data);
+
+// receives the data of a node and the context given to LL_for_each
+typedef void (*LL_Action)(void *data, void *context);
 
 // while the list runs a callback (for_each action, hard_delete_all deleter,
 // copy copier) it is locked: adding or deleting fails (LL_ERROR or no
@@ -68,19 +83,19 @@ void LL_soft_delete_all(LinkedList list);
 // =============================== HARD DELETE ================================
 
 // delete a list with its nodes and their data
-void LL_hard_delete_list(LinkedList list, void (*deleter)(void *));
+void LL_hard_delete_list(LinkedList list, LL_Deleter deleter);
 
 // delete the first node with its data
-void LL_hard_delete_first(LinkedList list, void (*deleter)(void *));
+void LL_hard_delete_first(LinkedList list, LL_Deleter deleter);
 
 // delete the last node with its data
-void LL_hard_delete_last(LinkedList list, void (*deleter)(void *));
+void LL_hard_delete_last(LinkedList list, LL_Deleter deleter);
 
 // delete the node with its data, given an index
-void LL_hard_delete_at(LinkedList list, size_t index, void (*deleter)(void *));
+void LL_hard_delete_at(LinkedList list, size_t index, LL_Deleter deleter);
 
 // delete all nodes with their data from the list
-void LL_hard_delete_all(LinkedList list, void (*deleter)(void *));
+void LL_hard_delete_all(LinkedList list, LL_Deleter deleter);
 
 // ============================= LIST VALIDATIONS =============================
 
@@ -111,14 +126,19 @@ bool LL_is_valid_insert(LinkedList list, size_t index);
 
 // copy a list (copier: deep copy; nullptr: memcpy of size_data bytes)
 // (deleter: frees the copied data if the copy fails; nullptr: free)
-LinkedList LL_copy(LinkedList list, size_t size_data,
-                   void *(*copier)(const void *), void (*deleter)(void *));
+LinkedList LL_copy(LinkedList list, size_t size_data, LL_Copier copier,
+                   LL_Deleter deleter);
 
 // reverse a list
 LinkedList LL_reverse(LinkedList list);
 
-// call action with the data of every node, from first to last (O(n))
+// call action with the data of every node and the context (any pointer, or
+// nullptr), from first to last (O(n))
 // the action may delete the current node, any other change is blocked
-void LL_for_each(LinkedList list, void (*action)(void *));
+void LL_for_each(LinkedList list, LL_Action action, void *context);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LINKED_LIST_H

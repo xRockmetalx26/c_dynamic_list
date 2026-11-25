@@ -158,7 +158,7 @@ void *LL_insert_at(LinkedList list, void *data, const size_t index) {
 
 // ============================= DELETE (PRIVATE) =============================
 
-static void delete_data(void *data, void (*deleter)(void *)) {
+static void delete_data(void *data, LL_Deleter deleter) {
   if (data && data != LL_ERROR) {
     if (deleter) {
       deleter(data);
@@ -239,27 +239,27 @@ void LL_soft_delete_all(LinkedList list) {
 
 // =============================== HARD DELETE ================================
 
-void LL_hard_delete_list(LinkedList list, void (*deleter)(void *)) {
+void LL_hard_delete_list(LinkedList list, LL_Deleter deleter) {
   if (LL_is_valid_list(list) && !is_locked(list)) {
     LL_hard_delete_all(list, deleter);
     free(list);
   }
 }
 
-void LL_hard_delete_first(LinkedList list, void (*deleter)(void *)) {
+void LL_hard_delete_first(LinkedList list, LL_Deleter deleter) {
   delete_data(LL_soft_delete_first(list), deleter);
 }
 
-void LL_hard_delete_last(LinkedList list, void (*deleter)(void *)) {
+void LL_hard_delete_last(LinkedList list, LL_Deleter deleter) {
   delete_data(LL_soft_delete_last(list), deleter);
 }
 
 void LL_hard_delete_at(LinkedList list, const size_t index,
-                       void (*deleter)(void *)) {
+                       LL_Deleter deleter) {
   delete_data(LL_soft_delete_at(list, index), deleter);
 }
 
-void LL_hard_delete_all(LinkedList list, void (*deleter)(void *)) {
+void LL_hard_delete_all(LinkedList list, LL_Deleter deleter) {
   if (LL_is_empty_list(list) || is_locked(list)) return;
 
   list->lock = LOCKED;
@@ -279,19 +279,19 @@ void LL_hard_delete_all(LinkedList list, void (*deleter)(void *)) {
 // ============================= LIST VALIDATIONS =============================
 
 bool LL_is_valid_list(LinkedList list) {
-  return list ? true : false;
+  return list != nullptr;
 }
 
 bool LL_is_empty_list(LinkedList list) {
   if (!LL_is_valid_list(list)) return true;
 
-  return list->size ? false : true;
+  return list->size == 0;
 }
 
 bool LL_is_full_list(LinkedList list) {
   if (!LL_is_valid_list(list)) return false;
 
-  return list->size == SIZE_MAX ? true : false;
+  return list->size == SIZE_MAX;
 }
 
 // ====================== INDEX, ADD, INSERT VALIDATIONS ======================
@@ -316,7 +316,7 @@ bool LL_is_valid_index(LinkedList list, const size_t index) {
 bool LL_is_valid_add(LinkedList list) {
   if (!LL_is_valid_list(list) || is_locked(list)) return false;
 
-  return LL_is_full_list(list) ? false : true;
+  return !LL_is_full_list(list);
 }
 
 bool LL_is_valid_insert(LinkedList list, const size_t index) {
@@ -327,8 +327,8 @@ bool LL_is_valid_insert(LinkedList list, const size_t index) {
 
 // ================================ UTILITIES =================================
 
-LinkedList LL_copy(LinkedList list, const size_t size_data,
-                   void *(*copier)(const void *), void (*deleter)(void *)) {
+LinkedList LL_copy(LinkedList list, const size_t size_data, LL_Copier copier,
+                   LL_Deleter deleter) {
   if (!LL_is_valid_list(list)) return nullptr;
 
   LinkedList list_copy = LL_new_list();
@@ -390,7 +390,7 @@ LinkedList LL_reverse(LinkedList list) {
   return list;
 }
 
-void LL_for_each(LinkedList list, void (*action)(void *)) {
+void LL_for_each(LinkedList list, LL_Action action, void *context) {
   if (LL_is_empty_list(list) || !action) return;
 
   const Node saved_lock = list->lock;
@@ -399,7 +399,7 @@ void LL_for_each(LinkedList list, void (*action)(void *)) {
     Node next = it->next;
     list->lock = saved_lock ? LOCKED : it;
 
-    action(it->data);
+    action(it->data, context);
 
     it = next;
   }

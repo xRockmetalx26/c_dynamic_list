@@ -72,7 +72,8 @@ static void counting_deleter(void *data) {
 // action for LL_for_each that records the visited values
 static int visited[10];
 static size_t visited_count = 0;
-static void record_action(void *data) {
+static void record_action(void *data, void *context) {
+  (void)context;
   visited[visited_count++] = *(int *)data;
 }
 
@@ -630,20 +631,30 @@ TEST(test_reverse) {
   LL_soft_delete_list(list);
 }
 
+// action that adds the values into the int pointed by the context
+static void sum_action(void *data, void *context) {
+  *(int *)context += *(int *)data;
+}
+
 TEST(test_for_each) {
   LinkedList list = new_list_of(4);
 
   visited_count = 0;
-  LL_for_each(list, record_action);
+  LL_for_each(list, record_action, nullptr);
   CHECK(visited_count == 4);
   CHECK(memcmp(visited, (int[]){0, 1, 2, 3}, 4 * sizeof(int)) == 0);
+
+  // the context reaches the action (no globals needed)
+  int sum = 0;
+  LL_for_each(list, sum_action, &sum);
+  CHECK(sum == 0 + 1 + 2 + 3);
 
   // errors: the action is not called
   LinkedList empty = LL_new_list();
   visited_count = 0;
-  LL_for_each(empty, record_action);
-  LL_for_each(nullptr, record_action);
-  LL_for_each(list, nullptr);
+  LL_for_each(empty, record_action, nullptr);
+  LL_for_each(nullptr, record_action, nullptr);
+  LL_for_each(list, nullptr, nullptr);
   CHECK(visited_count == 0);
 
   LL_soft_delete_list(empty);
@@ -651,67 +662,70 @@ TEST(test_for_each) {
 }
 
 // action that records the value and deletes the CURRENT node (always first)
-static LinkedList for_each_list;
-static void record_and_delete_action(void *data) {
-  record_action(data);
-  LL_soft_delete_first(for_each_list);
+// context: the list being iterated
+static void record_and_delete_action(void *data, void *context) {
+  record_action(data, nullptr);
+  LL_soft_delete_first(context);
 }
 
 TEST(test_for_each_delete_current) {
   // AUDIT: the action deleted the current node and for_each read it after
-  for_each_list = new_list_of(4);
+  LinkedList list = new_list_of(4);
 
   visited_count = 0;
-  LL_for_each(for_each_list, record_and_delete_action);
+  LL_for_each(list, record_and_delete_action, list);
   CHECK(visited_count == 4);
   CHECK(memcmp(visited, (int[]){0, 1, 2, 3}, 4 * sizeof(int)) == 0);
-  CHECK(LL_is_empty_list(for_each_list));
+  CHECK(LL_is_empty_list(list));
 
-  LL_soft_delete_list(for_each_list);
+  LL_soft_delete_list(list);
 }
 
 // counts forbidden operations that a callback could do on a locked list
 static LinkedList locked_list;
 static int lock_violations = 0;
 
-static void nested_delete_action(void *data) {
+// context: the list being iterated
+static void nested_delete_action(void *data, void *context) {
   (void)data;
   // a nested for_each can't delete anything (not even its current node)
-  if (LL_soft_delete_first(locked_list) != LL_ERROR) lock_violations++;
+  if (LL_soft_delete_first(context) != LL_ERROR) lock_violations++;
 }
 
-static void abusive_action(void *data) {
+// context: the list being iterated
+static void abusive_action(void *data, void *context) {
+  LinkedList list = context;
   if (data != &values[0]) return; // abuse only while visiting the first node
 
   // adding is blocked
-  if (LL_add_first(locked_list, &values[9]) != LL_ERROR) lock_violations++;
-  if (LL_add_last(locked_list, &values[9]) != LL_ERROR) lock_violations++;
-  if (LL_insert_at(locked_list, &values[9], 1) != LL_ERROR) lock_violations++;
+  if (LL_add_first(list, &values[9]) != LL_ERROR) lock_violations++;
+  if (LL_add_last(list, &values[9]) != LL_ERROR) lock_violations++;
+  if (LL_insert_at(list, &values[9], 1) != LL_ERROR) lock_violations++;
 
   // deleting any node other than the current one is blocked
-  if (LL_soft_delete_last(locked_list) != LL_ERROR) lock_violations++;
-  if (LL_soft_delete_at(locked_list, 1) != LL_ERROR) lock_violations++;
-  LL_soft_delete_all(locked_list);
-  LL_hard_delete_all(locked_list, nullptr);
-  LL_reverse(locked_list);
-  LL_soft_delete_list(locked_list);
-  LL_hard_delete_list(locked_list, nullptr);
-  LL_for_each(locked_list, nested_delete_action);
-  if (!list_equals(locked_list, (int[]){0, 1, 2, 3}, 4)) lock_violations++;
+  if (LL_soft_delete_last(list) != LL_ERROR) lock_violations++;
+  if (LL_soft_delete_at(list, 1) != LL_ERROR) lock_violations++;
+  LL_soft_delete_all(list);
+  LL_hard_delete_all(list, nullptr);
+  LL_reverse(list);
+  LL_soft_delete_list(list);
+  LL_hard_delete_list(list, nullptr);
+  LL_for_each(list, nested_delete_action, list);
+  if (!list_equals(list, (int[]){0, 1, 2, 3}, 4)) lock_violations++;
 
   // reading is allowed
-  if (LL_get_data(locked_list, 3) != &values[3]) lock_violations++;
+  if (LL_get_data(list, 3) != &values[3]) lock_violations++;
 
   // the current node can be deleted, but only once
-  if (LL_soft_delete_first(locked_list) != &values[0]) lock_violations++;
-  if (LL_soft_delete_first(locked_list) != LL_ERROR) lock_violations++;
+  if (LL_soft_delete_first(list) != &values[0]) lock_violations++;
+  if (LL_soft_delete_first(list) != LL_ERROR) lock_violations++;
 }
 
 TEST(test_for_each_lock) {
   locked_list = new_list_of(4);
   lock_violations = 0;
 
-  LL_for_each(locked_list, abusive_action);
+  LL_for_each(locked_list, abusive_action, locked_list);
   CHECK(lock_violations == 0);
   CHECK(list_equals(locked_list, (int[]){1, 2, 3}, 3));
 
