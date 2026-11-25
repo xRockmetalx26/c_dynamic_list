@@ -24,11 +24,8 @@ endif()
 add_library(linked_list STATIC ${SOURCE_FILES})
 target_include_directories(linked_list PUBLIC include)
 
-# TEST PROGRAM: test.exe, USES THE LIBRARY
-add_executable(test ${TEST_FILES})
-target_link_libraries(test PRIVATE linked_list)
-
-# PUT test.exe IN THE PROJECT ROOT INSTEAD OF build/
-set_target_properties(test PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}"
-)
+# TESTS: linked_list_test.exe, USES THE LIBRARY (RUN WITH: ctest --test-dir build)
+enable_testing()
+add_executable(linked_list_test ${TEST_FILES})
+target_link_libraries(linked_list_test PRIVATE linked_list)
+add_test(NAME linked_list_test COMMAND linked_list_test)
