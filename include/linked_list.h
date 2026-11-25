@@ -1,23 +1,26 @@
 #ifndef LINKED_LIST_H
 #define LINKED_LIST_H
 
-#include <node.h>
 #include <stddef.h>
 
 typedef struct linked_list *LinkedList;
+
+// returned when an operation fails (invalid index, empty list, not added)
+// different from nullptr, which is valid data stored in the list
+extern void *const LL_ERROR;
 
 // =============================== LINKED LIST ================================
 
 // create a linked list
 LinkedList LL_new_list();
 
-// number of nodes in the list (0 if the list is NULL)
+// number of nodes in the list (0 if the list is nullptr)
 size_t LL_size(LinkedList list);
 
 // =================================== DATA ===================================
 
 // get the data of a node, given an index
-// returns NULL if the index is not valid (check with LL_is_valid_index)
+// returns LL_ERROR if the index is not valid
 void *LL_get_data(LinkedList list, size_t index);
 
 // swap two values from the list
@@ -26,13 +29,16 @@ void LL_swap_data(LinkedList list, size_t index_1, size_t index_2);
 // =================================== ADD ====================================
 
 // add a node with data to the beginning of the list
-Node LL_add_first(LinkedList list, void *data);
+// returns the data, or LL_ERROR if it could not be added
+void *LL_add_first(LinkedList list, void *data);
 
 // add a node with data to the end of the list
-Node LL_add_last(LinkedList list, void *data);
+// returns the data, or LL_ERROR if it could not be added
+void *LL_add_last(LinkedList list, void *data);
 
 // insert a node with data at the given index (0 to size)
-Node LL_insert_at(LinkedList list, void *data, size_t index);
+// returns the data, or LL_ERROR if it could not be inserted
+void *LL_insert_at(LinkedList list, void *data, size_t index);
 
 // =============================== SOFT DELETE ================================
 
@@ -40,15 +46,15 @@ Node LL_insert_at(LinkedList list, void *data, size_t index);
 void LL_soft_delete_list(LinkedList list);
 
 // delete the first node without its data and return it
-// returns NULL if the list is empty (check with LL_is_empty_list)
+// returns LL_ERROR if the list is empty
 void *LL_soft_delete_first(LinkedList list);
 
 // delete the last node without its data and return it
-// returns NULL if the list is empty (check with LL_is_empty_list)
+// returns LL_ERROR if the list is empty
 void *LL_soft_delete_last(LinkedList list);
 
 // delete the node without its data, given an index, and return it
-// returns NULL if the index is not valid (check with LL_is_valid_index)
+// returns LL_ERROR if the index is not valid
 void *LL_soft_delete_at(LinkedList list, size_t index);
 
 // delete all nodes without their data from the list
@@ -73,7 +79,7 @@ void LL_hard_delete_all(LinkedList list, void (*deleter)(void *));
 
 // ============================= LIST VALIDATIONS =============================
 
-// checks if the list is valid (not NULL)
+// checks if the list is valid (not nullptr)
 bool LL_is_valid_list(LinkedList list);
 
 // checks if the list is empty
@@ -98,8 +104,8 @@ bool LL_is_valid_insert(LinkedList list, size_t index);
 
 // ================================ UTILITIES =================================
 
-// copy a list (copier: deep copy; NULL: memcpy of size_data bytes)
-// (deleter: frees the copied data if the copy fails; NULL: free)
+// copy a list (copier: deep copy; nullptr: memcpy of size_data bytes)
+// (deleter: frees the copied data if the copy fails; nullptr: free)
 LinkedList LL_copy(LinkedList list, size_t size_data,
                    void *(*copier)(const void *), void (*deleter)(void *));
 

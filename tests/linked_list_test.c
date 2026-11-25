@@ -34,15 +34,11 @@ static int values[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 // checks that the list contains exactly the expected ints, in order
 static bool list_equals(LinkedList list, const int *expected, size_t count) {
-  if (LL_size(list) != count) {
-    return false;
-  }
+  if (LL_size(list) != count) return false;
 
   for (size_t i = 0; i < count; i++) {
     int *data = LL_get_data(list, i);
-    if (!data || *data != expected[i]) {
-      return false;
-    }
+    if (!data || *data != expected[i]) return false;
   }
 
   return true;
@@ -103,9 +99,7 @@ static void box_deleter(void *data) {
 static int copier_calls = 0;
 static int copier_fail_at = 0;
 static void *failing_copier(const void *data) {
-  if (++copier_calls == copier_fail_at) {
-    return NULL;
-  }
+  if (++copier_calls == copier_fail_at) return nullptr;
 
   return new_int(*(const int *)data);
 }
@@ -115,7 +109,7 @@ static void *failing_copier(const void *data) {
 TEST(test_new_list) {
   LinkedList list = LL_new_list();
 
-  CHECK(list != NULL);
+  CHECK(list != nullptr);
   CHECK(LL_size(list) == 0);
   CHECK(LL_is_empty_list(list));
 
@@ -126,7 +120,7 @@ TEST(test_size) {
   LinkedList list = new_list_of(3);
 
   CHECK(LL_size(list) == 3);
-  CHECK(LL_size(NULL) == 0);
+  CHECK(LL_size(nullptr) == 0);
 
   LL_soft_delete_list(list);
 }
@@ -140,17 +134,18 @@ TEST(test_get_data) {
   CHECK(*(int *)LL_get_data(list, 2) == 2);
 
   // errors
-  CHECK(LL_get_data(list, 3) == NULL);
-  CHECK(LL_get_data(list, 100) == NULL);
-  CHECK(LL_get_data(NULL, 0) == NULL);
+  CHECK(LL_get_data(list, 3) == LL_ERROR);
+  CHECK(LL_get_data(list, 100) == LL_ERROR);
+  CHECK(LL_get_data(nullptr, 0) == LL_ERROR);
 
   LinkedList empty = LL_new_list();
-  CHECK(LL_get_data(empty, 0) == NULL);
+  CHECK(LL_get_data(empty, 0) == LL_ERROR);
 
-  // stored NULL data: valid index, the data itself is NULL
-  LL_add_last(empty, NULL);
+  // stored nullptr data: valid index, the data itself is nullptr
+  CHECK(LL_add_last(empty, nullptr) ==
+        nullptr); // adding nullptr data is a success
   CHECK(LL_is_valid_index(empty, 0));
-  CHECK(LL_get_data(empty, 0) == NULL);
+  CHECK(LL_get_data(empty, 0) == nullptr);
 
   LL_soft_delete_list(empty);
   LL_soft_delete_list(list);
@@ -169,10 +164,10 @@ TEST(test_swap_data) {
   LL_swap_data(list, 2, 2);
   CHECK(list_equals(list, (int[]){4, 3, 2, 1, 0}, 5));
 
-  // errors: invalid indexes or NULL list, no change and no crash
+  // errors: invalid indexes or nullptr list, no change and no crash
   LL_swap_data(list, 0, 5);
   LL_swap_data(list, 9, 1);
-  LL_swap_data(NULL, 0, 1);
+  LL_swap_data(nullptr, 0, 1);
   CHECK(list_equals(list, (int[]){4, 3, 2, 1, 0}, 5));
 
   LL_soft_delete_list(list);
@@ -183,12 +178,12 @@ TEST(test_swap_data) {
 TEST(test_add_first) {
   LinkedList list = LL_new_list();
 
-  CHECK(LL_add_first(list, &values[1]) != NULL);
-  CHECK(LL_add_first(list, &values[0]) != NULL);
+  CHECK(LL_add_first(list, &values[1]) == &values[1]);
+  CHECK(LL_add_first(list, &values[0]) == &values[0]);
   CHECK(list_equals(list, (int[]){0, 1}, 2));
 
   // errors
-  CHECK(LL_add_first(NULL, &values[0]) == NULL);
+  CHECK(LL_add_first(nullptr, &values[0]) == LL_ERROR);
 
   LL_soft_delete_list(list);
 }
@@ -196,8 +191,8 @@ TEST(test_add_first) {
 TEST(test_add_last) {
   LinkedList list = LL_new_list();
 
-  CHECK(LL_add_last(list, &values[0]) != NULL);
-  CHECK(LL_add_last(list, &values[1]) != NULL);
+  CHECK(LL_add_last(list, &values[0]) == &values[0]);
+  CHECK(LL_add_last(list, &values[1]) == &values[1]);
   CHECK(list_equals(list, (int[]){0, 1}, 2));
 
   // add_last after add_first on an empty list (first == last)
@@ -207,7 +202,13 @@ TEST(test_add_last) {
   CHECK(list_equals(other, (int[]){0, 1}, 2));
 
   // errors
-  CHECK(LL_add_last(NULL, &values[0]) == NULL);
+  CHECK(LL_add_last(nullptr, &values[0]) == LL_ERROR);
+
+  // LL_ERROR can't be stored (it would be confused with an error)
+  CHECK(LL_add_last(list, LL_ERROR) == LL_ERROR);
+  CHECK(LL_add_first(list, LL_ERROR) == LL_ERROR);
+  CHECK(LL_insert_at(list, LL_ERROR, 1) == LL_ERROR);
+  CHECK(list_equals(list, (int[]){0, 1}, 2));
 
   LL_soft_delete_list(other);
   LL_soft_delete_list(list);
@@ -217,10 +218,10 @@ TEST(test_insert_at) {
   LinkedList list = LL_new_list();
 
   // BUG #5: inserting into an empty list and at the end was not allowed
-  CHECK(LL_insert_at(list, &values[1], 0) != NULL); // empty list
-  CHECK(LL_insert_at(list, &values[3], 1) != NULL); // end (index == size)
-  CHECK(LL_insert_at(list, &values[2], 1) != NULL); // middle
-  CHECK(LL_insert_at(list, &values[0], 0) != NULL); // beginning
+  CHECK(LL_insert_at(list, &values[1], 0) == &values[1]); // empty list
+  CHECK(LL_insert_at(list, &values[3], 1) == &values[3]); // end (index == size)
+  CHECK(LL_insert_at(list, &values[2], 1) == &values[2]); // middle
+  CHECK(LL_insert_at(list, &values[0], 0) == &values[0]); // beginning
   CHECK(list_equals(list, (int[]){0, 1, 2, 3}, 4));
 
   // last must be updated when inserting at the end
@@ -229,9 +230,9 @@ TEST(test_insert_at) {
   CHECK(list_equals(list, (int[]){0, 1, 2, 3, 4, 5}, 6));
 
   // errors
-  CHECK(LL_insert_at(list, &values[9], 7) == NULL); // index > size
-  CHECK(LL_insert_at(list, &values[9], 100) == NULL);
-  CHECK(LL_insert_at(NULL, &values[9], 0) == NULL);
+  CHECK(LL_insert_at(list, &values[9], 7) == LL_ERROR); // index > size
+  CHECK(LL_insert_at(list, &values[9], 100) == LL_ERROR);
+  CHECK(LL_insert_at(nullptr, &values[9], 0) == LL_ERROR);
   CHECK(LL_size(list) == 6);
 
   LL_soft_delete_list(list);
@@ -252,10 +253,18 @@ TEST(test_soft_delete_first) {
   LL_add_last(list, &values[7]);
   CHECK(list_equals(list, (int[]){7}, 1));
 
+  // stored nullptr data: the list is not empty, the deleted data is nullptr
+  LinkedList with_null = LL_new_list();
+  LL_add_last(with_null, nullptr);
+  CHECK(!LL_is_empty_list(with_null));
+  CHECK(LL_soft_delete_first(with_null) == nullptr);
+  CHECK(LL_is_empty_list(with_null));
+  LL_soft_delete_list(with_null);
+
   // errors
   LinkedList empty = LL_new_list();
-  CHECK(LL_soft_delete_first(empty) == NULL);
-  CHECK(LL_soft_delete_first(NULL) == NULL);
+  CHECK(LL_soft_delete_first(empty) == LL_ERROR);
+  CHECK(LL_soft_delete_first(nullptr) == LL_ERROR);
 
   LL_soft_delete_list(empty);
   LL_soft_delete_list(list);
@@ -280,8 +289,8 @@ TEST(test_soft_delete_last) {
 
   // errors
   LinkedList empty = LL_new_list();
-  CHECK(LL_soft_delete_last(empty) == NULL);
-  CHECK(LL_soft_delete_last(NULL) == NULL);
+  CHECK(LL_soft_delete_last(empty) == LL_ERROR);
+  CHECK(LL_soft_delete_last(nullptr) == LL_ERROR);
 
   LL_soft_delete_list(empty);
   LL_soft_delete_list(one);
@@ -305,13 +314,13 @@ TEST(test_soft_delete_at) {
   CHECK(list_equals(list, (int[]){1, 3, 9}, 3));
 
   // errors
-  CHECK(LL_soft_delete_at(list, 3) == NULL);
-  CHECK(LL_soft_delete_at(list, 100) == NULL);
-  CHECK(LL_soft_delete_at(NULL, 0) == NULL);
+  CHECK(LL_soft_delete_at(list, 3) == LL_ERROR);
+  CHECK(LL_soft_delete_at(list, 100) == LL_ERROR);
+  CHECK(LL_soft_delete_at(nullptr, 0) == LL_ERROR);
   CHECK(LL_size(list) == 3);
 
   LinkedList empty = LL_new_list();
-  CHECK(LL_soft_delete_at(empty, 0) == NULL);
+  CHECK(LL_soft_delete_at(empty, 0) == LL_ERROR);
 
   LL_soft_delete_list(empty);
   LL_soft_delete_list(list);
@@ -331,7 +340,7 @@ TEST(test_soft_delete_all) {
   // errors: no crash
   LinkedList empty = LL_new_list();
   LL_soft_delete_all(empty);
-  LL_soft_delete_all(NULL);
+  LL_soft_delete_all(nullptr);
   CHECK(LL_is_empty_list(empty));
 
   LL_soft_delete_list(empty);
@@ -344,7 +353,7 @@ TEST(test_soft_delete_list) {
   LL_soft_delete_list(LL_new_list());
 
   // errors: no crash
-  LL_soft_delete_list(NULL);
+  LL_soft_delete_list(nullptr);
   CHECK(true);
 }
 
@@ -366,9 +375,9 @@ TEST(test_hard_delete_first_last_at) {
   // errors: the deleter must NOT be called
   deleter_calls = 0;
   LL_hard_delete_at(list, 5, counting_deleter);
-  LL_hard_delete_first(NULL, counting_deleter);
-  LL_hard_delete_last(NULL, counting_deleter);
-  LL_hard_delete_at(NULL, 0, counting_deleter);
+  LL_hard_delete_first(nullptr, counting_deleter);
+  LL_hard_delete_last(nullptr, counting_deleter);
+  LL_hard_delete_at(nullptr, 0, counting_deleter);
   CHECK(deleter_calls == 0);
   CHECK(LL_size(list) == 2);
 
@@ -377,12 +386,12 @@ TEST(test_hard_delete_first_last_at) {
   LL_hard_delete_last(empty, counting_deleter);
   CHECK(deleter_calls == 0);
 
-  // NULL deleter: uses free
-  LL_hard_delete_first(list, NULL);
+  // nullptr deleter: uses free
+  LL_hard_delete_first(list, nullptr);
   CHECK(list_equals(list, (int[]){3}, 1));
 
   LL_soft_delete_list(empty);
-  LL_hard_delete_list(list, NULL);
+  LL_hard_delete_list(list, nullptr);
 }
 
 TEST(test_hard_delete_all_and_list) {
@@ -396,16 +405,16 @@ TEST(test_hard_delete_all_and_list) {
   CHECK(deleter_calls == 4);
   CHECK(LL_is_empty_list(list));
 
-  // stored NULL data: the deleter is not called for it
-  LL_add_last(list, NULL);
+  // stored nullptr data: the deleter is not called for it
+  LL_add_last(list, nullptr);
   LL_add_last(list, new_int(9));
   deleter_calls = 0;
   LL_hard_delete_list(list, counting_deleter);
   CHECK(deleter_calls == 1);
 
   // errors: no crash
-  LL_hard_delete_all(NULL, counting_deleter);
-  LL_hard_delete_list(NULL, counting_deleter);
+  LL_hard_delete_all(nullptr, counting_deleter);
+  LL_hard_delete_list(nullptr, counting_deleter);
   CHECK(deleter_calls == 1);
 }
 
@@ -416,15 +425,15 @@ TEST(test_list_validations) {
   LinkedList empty = LL_new_list();
 
   CHECK(LL_is_valid_list(list));
-  CHECK(!LL_is_valid_list(NULL));
+  CHECK(!LL_is_valid_list(nullptr));
 
   CHECK(!LL_is_empty_list(list));
   CHECK(LL_is_empty_list(empty));
-  CHECK(LL_is_empty_list(NULL)); // BUG #3: NULL was "not empty" -> crash
+  CHECK(LL_is_empty_list(nullptr)); // BUG #3: nullptr was "not empty" -> crash
 
   CHECK(!LL_is_full_list(list));
   CHECK(!LL_is_full_list(empty));
-  CHECK(!LL_is_full_list(NULL));
+  CHECK(!LL_is_full_list(nullptr));
 
   LL_soft_delete_list(empty);
   LL_soft_delete_list(list);
@@ -442,7 +451,7 @@ TEST(test_contains) {
   CHECK(!LL_contains(list, &outside)); // compares pointers, not values
 
   // errors
-  CHECK(!LL_contains(NULL, &values[0]));
+  CHECK(!LL_contains(nullptr, &values[0]));
   LinkedList empty = LL_new_list();
   CHECK(!LL_contains(empty, &values[0]));
 
@@ -458,18 +467,18 @@ TEST(test_index_add_insert_validations) {
   CHECK(LL_is_valid_index(list, 2));
   CHECK(!LL_is_valid_index(list, 3));
   CHECK(!LL_is_valid_index(empty, 0));
-  CHECK(!LL_is_valid_index(NULL, 0));
+  CHECK(!LL_is_valid_index(nullptr, 0));
 
   CHECK(LL_is_valid_add(list));
   CHECK(LL_is_valid_add(empty));
-  CHECK(!LL_is_valid_add(NULL));
+  CHECK(!LL_is_valid_add(nullptr));
 
   CHECK(LL_is_valid_insert(list, 0));
   CHECK(LL_is_valid_insert(list, 3)); // index == size: insert at the end
   CHECK(!LL_is_valid_insert(list, 4));
   CHECK(LL_is_valid_insert(empty, 0));
   CHECK(!LL_is_valid_insert(empty, 1));
-  CHECK(!LL_is_valid_insert(NULL, 0));
+  CHECK(!LL_is_valid_insert(nullptr, 0));
 
   LL_soft_delete_list(empty);
   LL_soft_delete_list(list);
@@ -483,8 +492,8 @@ TEST(test_copy_memcpy) {
     LL_add_last(list, new_int(i));
   }
 
-  LinkedList copy = LL_copy(list, sizeof(int), NULL, NULL);
-  CHECK(copy != NULL && copy != list);
+  LinkedList copy = LL_copy(list, sizeof(int), nullptr, nullptr);
+  CHECK(copy != nullptr && copy != list);
   CHECK(list_equals(copy, (int[]){0, 1, 2}, 3));
 
   // the copied data is independent
@@ -492,8 +501,8 @@ TEST(test_copy_memcpy) {
   CHECK(*(int *)LL_get_data(copy, 0) == 0);
   CHECK(LL_get_data(list, 1) != LL_get_data(copy, 1));
 
-  LL_hard_delete_list(copy, NULL);
-  LL_hard_delete_list(list, NULL);
+  LL_hard_delete_list(copy, nullptr);
+  LL_hard_delete_list(list, nullptr);
 }
 
 TEST(test_copy_with_copier) {
@@ -506,7 +515,7 @@ TEST(test_copy_with_copier) {
 
   // BUG #4: a memcpy copy would share the inner pointer (double free)
   LinkedList copy = LL_copy(list, sizeof(Box), box_copier, box_deleter);
-  CHECK(copy != NULL && LL_size(copy) == 3);
+  CHECK(copy != nullptr && LL_size(copy) == 3);
 
   Box *original = LL_get_data(list, 1);
   Box *copied = LL_get_data(copy, 1);
@@ -519,23 +528,51 @@ TEST(test_copy_with_copier) {
   LL_hard_delete_list(list, box_deleter);
 }
 
+TEST(test_copy_null_data) {
+  // BUG #6: nullptr data was passed to memcpy (UB) / to the copier (copy
+  // failed)
+  LinkedList list = LL_new_list();
+  LL_add_last(list, new_int(1));
+  LL_add_last(list, nullptr);
+  LL_add_last(list, new_int(3));
+
+  // without copier (memcpy)
+  LinkedList copy = LL_copy(list, sizeof(int), nullptr, nullptr);
+  CHECK(copy != nullptr && LL_size(copy) == 3);
+  CHECK(*(int *)LL_get_data(copy, 0) == 1);
+  CHECK(LL_get_data(copy, 1) == nullptr);
+  CHECK(*(int *)LL_get_data(copy, 2) == 3);
+  LL_hard_delete_list(copy, nullptr);
+
+  // with copier: the copier is never called with nullptr
+  copier_calls = 0;
+  copier_fail_at = 0;
+  copy = LL_copy(list, 0, failing_copier, nullptr);
+  CHECK(copy != nullptr && LL_size(copy) == 3);
+  CHECK(copier_calls == 2);
+  CHECK(LL_get_data(copy, 1) == nullptr);
+  LL_hard_delete_list(copy, nullptr);
+
+  LL_hard_delete_list(list, nullptr);
+}
+
 TEST(test_copy_errors) {
-  // NULL list
-  CHECK(LL_copy(NULL, sizeof(int), NULL, NULL) == NULL);
+  // nullptr list
+  CHECK(LL_copy(nullptr, sizeof(int), nullptr, nullptr) == nullptr);
 
   // BUG #4: an empty list returned the SAME list (double free)
   LinkedList empty = LL_new_list();
-  LinkedList copy = LL_copy(empty, sizeof(int), NULL, NULL);
-  CHECK(copy != NULL && copy != empty);
+  LinkedList copy = LL_copy(empty, sizeof(int), nullptr, nullptr);
+  CHECK(copy != nullptr && copy != empty);
   CHECK(LL_is_empty_list(copy));
   LL_soft_delete_list(copy);
 
-  // copier fails on the 3rd node: returns NULL and frees the 2 copied ones
+  // copier fails on the 3rd node: returns nullptr and frees the 2 copied ones
   LinkedList list = new_list_of(5);
   copier_calls = 0;
   copier_fail_at = 3;
   deleter_calls = 0;
-  CHECK(LL_copy(list, 0, failing_copier, counting_deleter) == NULL);
+  CHECK(LL_copy(list, 0, failing_copier, counting_deleter) == nullptr);
   CHECK(deleter_calls == 2);
 
   // the original list is not modified
@@ -575,7 +612,7 @@ TEST(test_reverse) {
   // errors: no crash
   LinkedList empty = LL_new_list();
   CHECK(LL_reverse(empty) == empty);
-  CHECK(LL_reverse(NULL) == NULL);
+  CHECK(LL_reverse(nullptr) == nullptr);
 
   LL_soft_delete_list(empty);
   LL_soft_delete_list(two);
@@ -595,8 +632,8 @@ TEST(test_for_each) {
   LinkedList empty = LL_new_list();
   visited_count = 0;
   LL_for_each(empty, record_action);
-  LL_for_each(NULL, record_action);
-  LL_for_each(list, NULL);
+  LL_for_each(nullptr, record_action);
+  LL_for_each(list, nullptr);
   CHECK(visited_count == 0);
 
   LL_soft_delete_list(empty);
@@ -632,6 +669,7 @@ int main() {
 
   RUN(test_copy_memcpy);
   RUN(test_copy_with_copier);
+  RUN(test_copy_null_data);
   RUN(test_copy_errors);
   RUN(test_reverse);
   RUN(test_for_each);
